@@ -1,0 +1,16 @@
+{
+    "hostname": "localhost",
+    "default_page_logged_in": "/welcome",
+    "default_page_logged_out": "/",
+    "path_to_templates": "/templates",
+    "sqlite_db_path": "data/app.db",
+    "file_db_path": "data/",
+    "strava_config": {
+        "client_id": 0,
+        "client_secret": "",
+        "authorization_callback": ""
+    },
+    "open_route_service_config": {
+        "api_key": ""
+    }
+}

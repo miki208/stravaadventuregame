@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    table {
+      margin: 30px auto;
+      border-collapse: collapse;
+      width: 80%;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    hr {
+      margin: 50px auto;
+      width: 80%;
+    }
+    form {
+      margin-top: 30px;
+    }
+    select, button {
+      padding: 8px;
+      margin: 5px;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome, {{.Athl.FirstName}} {{.Athl.LastName}}!</h1>
+  <p>You have successfully connected your Strava account.</p>
+
+  <hr />
+
+  {{if .StartedAdventures}}
+  <table>
+    <thead>
+      <tr>
+        <th>Start</th>
+        <th>End</th>
+        <th>Distance (km)</th>
+        <th>Current location</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .StartedAdventures}}
+      <tr>
+        <td>{{.StartLocation.Name}}</td>
+        <td>{{.EndLocation.Name}}</td>
+        <td>{{.Adventure.CurrentDistance}}/{{.Adventure.TotalDistance}} km</td>
+        <td>{{.Adventure.CurrentLocationName}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <p>You didn't start any adventure.</p>
+  {{end}}
+
+  <hr />
+
+  {{if .CompletedAdventures}}
+  <table>
+    <thead>
+      <tr>
+        <th>Start</th>
+        <th>End</th>
+        <th>Distance (km)</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+  {{else}}
+  <p>You didn't complete any adventure.</p>
+  {{end}}
+
+  <hr />
+
+  {{if not .StartedAdventures}}
+  <p>Start new adventure from the list</p>
+
+  <form action="/start-adventure" method="POST">
+    <label for="start">Start location:</label>
+    <select id="start" name="start">
+      {{ range .AvailableLocations }}
+      <option value="{{.Id}}">{{.Name}}</option>
+      {{end}}
+    </select>
+
+    <label for="stop">Stop location:</label>
+    <select id="stop" name="stop">
+      {{ range .AvailableLocations }}
+      <option value="{{.Id}}">{{.Name}}</option>
+      {{end}}
+    </select>
+
+    <br/>
+    <button type="submit">Start Adventure</button>
+  </form>
+  {{end}}
+
+</body>
+</html>
