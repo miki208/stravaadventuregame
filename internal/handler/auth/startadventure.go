@@ -33,7 +33,18 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 		return
 	}
 
-	// TODO: make sure that user is not already on an adventure
+	// make sure that user is not already on an adventure
+	adventuresStarted, err := model.GetAdventuresByAthlete(session.UserId, model.FilterNotCompleted, app.SqlDb, nil)
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+
+		return
+	}
+	if len(adventuresStarted) > 0 {
+		http.Error(resp, "You are already on an adventure.", http.StatusBadRequest)
+
+		return
+	}
 
 	// if everything is ok, these locations should be in the database, load them
 	var startLocation model.Location

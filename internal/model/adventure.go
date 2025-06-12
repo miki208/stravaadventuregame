@@ -111,10 +111,10 @@ func (adventure *Adventure) Load(athlId int, startLocation int, endLocation int,
 	return true, nil
 }
 
-func AdventureExists(id int, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func AdventureExists(athlId int, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var temp Adventure
 
-	exists, err := temp.Load(id, startLocation, endLocation, db, tx)
+	exists, err := temp.Load(athlId, startLocation, endLocation, db, tx)
 	if err != nil {
 		return false, err
 	}
