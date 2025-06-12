@@ -73,7 +73,7 @@ func (athl *Athlete) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if exists {
-		_, err = tx.Exec("UPDATE athlete SET username=?, first_name=?, last_name=?, city=?, country=?, sex=?, is_admin=? WHERE id=?", athl.Username, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
+		_, err = tx.Exec("UPDATE athlete SET username=?, first_name=?, last_name=?, city=?, country=?, sex=? WHERE id=?", athl.Username, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.Id)
 		if err != nil {
 			tx.Rollback()
 
