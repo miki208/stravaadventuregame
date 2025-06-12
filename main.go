@@ -13,7 +13,7 @@ func main() {
 	app := application.MakeApp()
 
 	http.HandleFunc(app.DefaultPageLoggedOutUsers, handler.MakeHandlerWoutSession(app, noauth.Authorize))
-	http.HandleFunc(app.StravaSvc.AuthorizationCallback, handler.MakeHandlerWoutSession(app, noauth.AuthorizationCallback))
+	http.HandleFunc(app.StravaSvc.GetAuthorizationCallback(), handler.MakeHandlerWoutSession(app, noauth.AuthorizationCallback))
 	http.HandleFunc(app.DefaultPageLoggedInUsers, handler.MakeHandlerWSession(app, auth.Welcome))
 	http.HandleFunc("/start-adventure", handler.MakeHandlerWSession(app, auth.StartAdventure))
 

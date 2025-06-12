@@ -9,6 +9,7 @@ type stravaConfig struct {
 	ClientId              int    `json:"client_id"`
 	ClientSecret          string `json:"client_secret"`
 	AuthorizationCallback string `json:"authorization_callback"`
+	Scope                 string `json:"scope"`
 }
 
 type openRouteServiceConfig struct {
@@ -63,7 +64,7 @@ func (conf *config) validate() bool {
 		return false
 	}
 
-	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" {
+	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" || conf.StravaConf.Scope == "" {
 		return false
 	}
 

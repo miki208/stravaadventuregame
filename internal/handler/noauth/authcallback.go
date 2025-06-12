@@ -23,6 +23,18 @@ func AuthorizationCallback(w http.ResponseWriter, req *http.Request, app *applic
 		return
 	}
 
+	if !query.Has("scope") {
+		http.Redirect(w, req, "/?error=scope_missing", http.StatusFound)
+
+		return
+	}
+
+	if !app.StravaSvc.ValidateScope(query.Get("scope")) {
+		http.Redirect(w, req, "/?error=invalid_scope", http.StatusFound)
+
+		return
+	}
+
 	athlete, credentials, err := app.StravaSvc.ExchangeToken(query.Get("code"))
 	if err != nil {
 		stravaError := err.(*strava.StravaError)

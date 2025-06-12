@@ -15,7 +15,7 @@ func Authorize(w http.ResponseWriter, req *http.Request, app *application.App) {
 	}{
 		ClientId:    app.StravaSvc.GetClientId(),
 		RedirectUri: app.GetFullAuthorizationCallbackUrl(),
-		Scope:       "read",
+		Scope:       app.StravaSvc.GetScope(),
 		Error:       req.URL.Query().Get("error"),
 	})
 

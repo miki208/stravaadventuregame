@@ -26,7 +26,7 @@ type App struct {
 }
 
 func (app *App) GetFullAuthorizationCallbackUrl() string {
-	return "http://" + app.Hostname + app.StravaSvc.AuthorizationCallback
+	return "http://" + app.Hostname + app.StravaSvc.GetAuthorizationCallback()
 }
 
 func MakeApp() *App {
@@ -54,7 +54,11 @@ func MakeApp() *App {
 		SqlDb:  database.CreateSQLiteDatabase(conf.SqliteDbPath),
 		FileDb: database.CreateFileDatabase(conf.FileDbPath),
 
-		StravaSvc: strava.CreateService(conf.StravaConf.ClientId, conf.StravaConf.ClientSecret, conf.StravaConf.AuthorizationCallback),
-		OrsSvc:    openrouteservice.CreateService(conf.OrsConf.ApiKey),
+		StravaSvc: strava.CreateService(
+			conf.StravaConf.ClientId,
+			conf.StravaConf.ClientSecret,
+			conf.StravaConf.AuthorizationCallback,
+			conf.StravaConf.Scope),
+		OrsSvc: openrouteservice.CreateService(conf.OrsConf.ApiKey),
 	}
 }

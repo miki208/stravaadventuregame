@@ -7,6 +7,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/model"
@@ -15,21 +17,31 @@ import (
 type Strava struct {
 	clientId              int
 	clientSecret          string
-	AuthorizationCallback string
+	authorizationCallback string
 	baseUrl               string
+	scope                 string
 }
 
-func CreateService(clientId int, clientSecret, authorizationCallback string) *Strava {
+func CreateService(clientId int, clientSecret, authorizationCallback, scope string) *Strava {
 	return &Strava{
 		clientId:              clientId,
 		clientSecret:          clientSecret,
-		AuthorizationCallback: authorizationCallback,
+		authorizationCallback: authorizationCallback,
 		baseUrl:               "https://www.strava.com/api/v3",
+		scope:                 scope,
 	}
 }
 
 func (svc *Strava) GetClientId() int {
 	return svc.clientId
+}
+
+func (svc *Strava) GetAuthorizationCallback() string {
+	return svc.authorizationCallback
+}
+
+func (svc *Strava) GetScope() string {
+	return svc.scope
 }
 
 func (svc *Strava) ExchangeToken(authorizationCode string) (*model.Athlete, *model.StravaCredential, error) {
@@ -145,4 +157,15 @@ func (svc *Strava) GetCredentialsForAthlete(athleteId int, db *sql.DB, tx *sql.T
 	}
 
 	return cred, nil
+}
+
+func (svc *Strava) ValidateScope(scopeGiven string) bool {
+	scopeGivenParts := strings.Split(scopeGiven, ",")
+	for _, part := range strings.Split(svc.scope, ",") {
+		if !slices.Contains(scopeGivenParts, part) {
+			return false
+		}
+	}
+
+	return true
 }

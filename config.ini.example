@@ -8,7 +8,8 @@
     "strava_config": {
         "client_id": 0,
         "client_secret": "",
-        "authorization_callback": ""
+        "authorization_callback": "",
+        "scope": ""
     },
     "open_route_service_config": {
         "api_key": ""
