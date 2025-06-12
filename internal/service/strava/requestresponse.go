@@ -17,3 +17,17 @@ type TokenExchangeResponse struct {
 	ExpiresIn    int           `json:"expires_in"`
 	Athl         model.Athlete `json:"athlete"`
 }
+
+type TokenRefreshRequest struct {
+	ClientId     int    `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	GrantType    string `json:"grant_type"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type TokenRefreshResponse struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresAt    int    `json:"expires_at"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
