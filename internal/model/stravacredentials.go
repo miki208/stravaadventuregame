@@ -63,7 +63,7 @@ func (cred *StravaCredential) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if exists {
-		_, err := tx.Exec("UPDATE StravaCredentials SET access_token=?, refresh_token=?, expires_at=? WHERE athlete_id=?", cred.AccessToken, cred.RefreshToken, cred.ExpiresAt, cred.ExpiresAt)
+		_, err := tx.Exec("UPDATE StravaCredentials SET access_token=?, refresh_token=?, expires_at=? WHERE athlete_id=?", cred.AccessToken, cred.RefreshToken, cred.ExpiresAt, cred.AthleteId)
 		if err != nil {
 			tx.Rollback()
 
