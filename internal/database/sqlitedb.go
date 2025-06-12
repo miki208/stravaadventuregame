@@ -1,9 +1,14 @@
 package database
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+
+	_ "modernc.org/sqlite"
+)
 
 func CreateSQLiteDatabase(dbFilePath string) *sql.DB {
-	db, err := sql.Open("sqlite", dbFilePath)
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?_pragma=foreign_keys(1)", dbFilePath))
 	if err != nil {
 		panic(err)
 	}

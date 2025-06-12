@@ -87,6 +87,86 @@ func (svc *Strava) ExchangeToken(authorizationCode string) (*model.Athlete, *mod
 	return &tokenExchangeResponseObj.Athl, &stravaCredential, nil
 }
 
+func (svc *Strava) Deauthorize(athleteId int, db *sql.DB, tx *sql.Tx) error {
+	// retrieve athlete and credentials to ensure they exist
+	credentials, err := svc.GetCredentialsForAthlete(athleteId, db, tx)
+	if err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	var athlete model.Athlete
+	exists, err := athlete.LoadById(athleteId, db, tx)
+	if err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	if !exists {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: http.StatusNotFound, err: errors.New("athlete not found")}
+	}
+
+	// deauthorize the athlete
+	deauthorizationBody, err := json.Marshal(DeauthorizationRequest{
+		AccessToken: credentials.AccessToken,
+	})
+	if err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	deauthorizationResponse, err := http.Post(svc.baseUrl+"/oauth/deauthorize", "application/json", bytes.NewBuffer(deauthorizationBody))
+	if err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	defer deauthorizationResponse.Body.Close()
+
+	_, err = io.ReadAll(deauthorizationResponse.Body)
+	if err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	if deauthorizationResponse.StatusCode != http.StatusOK {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return &StravaError{statusCode: deauthorizationResponse.StatusCode, err: errors.New("deauthorization failed")}
+	}
+
+	// delete the athlete (and everything related to it)
+	err = athlete.Delete(db, tx)
+	if tx != nil {
+		tx.Rollback()
+
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	return nil
+}
+
 func (svc *Strava) refreshTokenIfNeeded(cred *model.StravaCredential) (bool, error) {
 	expiresAt := time.Unix(int64(cred.ExpiresAt), 0)
 	if !expiresAt.Before(time.Now()) && time.Until(expiresAt) >= 5*time.Minute {

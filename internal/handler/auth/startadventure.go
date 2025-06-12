@@ -33,6 +33,8 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 		return
 	}
 
+	// TODO: make sure that user is not already on an adventure
+
 	// if everything is ok, these locations should be in the database, load them
 	var startLocation model.Location
 	found, err := startLocation.LoadById(startLocationId, app.SqlDb, nil)

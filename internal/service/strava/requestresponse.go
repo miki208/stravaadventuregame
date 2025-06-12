@@ -31,3 +31,7 @@ type TokenRefreshResponse struct {
 	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
 }
+
+type DeauthorizationRequest struct {
+	AccessToken string `json:"access_token"`
+}

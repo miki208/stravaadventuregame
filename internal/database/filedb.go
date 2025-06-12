@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 	"sync"
-
-	_ "modernc.org/sqlite"
 )
 
 type FileDatabase struct {

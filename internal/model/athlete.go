@@ -97,3 +97,24 @@ func (athl *Athlete) Save(db *sql.DB, tx *sql.Tx) error {
 
 	return nil
 }
+
+func (athl *Athlete) Delete(db *sql.DB, tx *sql.Tx) error {
+	query := "DELETE FROM Athlete WHERE id=?"
+
+	var err error
+	if tx != nil {
+		_, err = tx.Exec(query, athl.Id)
+	} else {
+		_, err = db.Exec(query, athl.Id)
+	}
+
+	if err != nil {
+		if tx != nil {
+			tx.Rollback()
+		}
+
+		return err
+	}
+
+	return nil
+}
