@@ -38,8 +38,20 @@ CREATE TABLE IF NOT EXISTS "Adventure" (
 	"total_distance"	REAL NOT NULL,
 	"completed"	INTEGER NOT NULL DEFAULT 0,
 	FOREIGN KEY("end_location") REFERENCES "Location"("id") ON DELETE CASCADE,
-	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
 	FOREIGN KEY("start_location") REFERENCES "Location"("id") ON DELETE CASCADE,
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
 	PRIMARY KEY("athlete_id","start_location","end_location")
+);
+DROP TABLE IF EXISTS "Activity";
+CREATE TABLE IF NOT EXISTS "Activity" (
+	"id"	INTEGER NOT NULL,
+	"athlete_id"	INTEGER NOT NULL,
+	"type"	INTEGER NOT NULL,
+	"distance"	REAL NOT NULL,
+	"start_date"	INTEGER NOT NULL,
+	"moving_time"	INTEGER NOT NULL,
+	"elevation_gain"	REAL NOT NULL,
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
+	PRIMARY KEY("id")
 );
 COMMIT;
