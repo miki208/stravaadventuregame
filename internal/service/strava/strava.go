@@ -7,7 +7,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,15 +22,19 @@ type Strava struct {
 	authorizationCallback string
 	baseUrl               string
 	scope                 string
+	webhookCallback       string
+	verifyToken           string // TODO: this should be a random string in future
 }
 
-func CreateService(clientId int, clientSecret, authorizationCallback, scope string) *Strava {
+func CreateService(clientId int, clientSecret, authorizationCallback, scope, webhookCallback, verifyToken string) *Strava {
 	return &Strava{
 		clientId:              clientId,
 		clientSecret:          clientSecret,
 		authorizationCallback: authorizationCallback,
 		baseUrl:               "https://www.strava.com/api/v3",
 		scope:                 scope,
+		webhookCallback:       webhookCallback,
+		verifyToken:           verifyToken,
 	}
 }
 
@@ -42,6 +48,14 @@ func (svc *Strava) GetAuthorizationCallback() string {
 
 func (svc *Strava) GetScope() string {
 	return svc.scope
+}
+
+func (svc *Strava) GetWebhookCallback() string {
+	return svc.webhookCallback
+}
+
+func (svc *Strava) GetVerifyToken() string {
+	return svc.verifyToken
 }
 
 func (svc *Strava) ExchangeToken(authorizationCode string) (*model.Athlete, *model.StravaCredential, error) {
@@ -248,4 +262,70 @@ func (svc *Strava) ValidateScope(scopeGiven string) bool {
 	}
 
 	return true
+}
+
+func (svc *Strava) CreateSubscription(fullCallbackUrl string) (int, error) {
+	subscriptionCreationBody, err := json.Marshal(SubscriptionCreationRequest{
+		ClientId:     svc.clientId,
+		ClientSecret: svc.clientSecret,
+		CallbackUrl:  fullCallbackUrl,
+		VerifyToken:  svc.verifyToken,
+	})
+	if err != nil {
+		return 0, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	subscriptionCreationResponse, err := http.Post(svc.baseUrl+"/push_subscriptions", "application/json", bytes.NewBuffer(subscriptionCreationBody))
+	if err != nil {
+		return 0, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	defer subscriptionCreationResponse.Body.Close()
+
+	subscriptionCreationResponseBody, err := io.ReadAll(subscriptionCreationResponse.Body)
+	if err != nil {
+		return 0, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	if subscriptionCreationResponse.StatusCode != http.StatusCreated {
+		return 0, &StravaError{statusCode: subscriptionCreationResponse.StatusCode, err: errors.New("subscription creation failed")}
+	}
+
+	var subscriptionCreationResponseObj SubscriptionCreationResponse
+	err = json.Unmarshal(subscriptionCreationResponseBody, &subscriptionCreationResponseObj)
+	if err != nil {
+		return 0, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	return subscriptionCreationResponseObj.Id, nil
+}
+
+func (svc *Strava) DeleteSubscription(subscriptionId int) error {
+	u, err := url.Parse(svc.baseUrl + "/push_subscriptions/" + strconv.Itoa(subscriptionId))
+	if err != nil {
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	query := u.Query()
+	query.Set("client_id", strconv.Itoa(svc.clientId))
+	query.Set("client_secret", svc.clientSecret)
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
+	if err != nil {
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return &StravaError{statusCode: resp.StatusCode, err: errors.New("subscription deletion failed")}
+	}
+
+	return nil
 }

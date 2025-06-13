@@ -35,3 +35,18 @@ type TokenRefreshResponse struct {
 type DeauthorizationRequest struct {
 	AccessToken string `json:"access_token"`
 }
+
+type SubscriptionCreationRequest struct {
+	ClientId     int    `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+	CallbackUrl  string `json:"callback_url"`
+	VerifyToken  string `json:"verify_token"`
+}
+
+type SubscriptionCreationResponse struct {
+	Id int `json:"id"`
+}
+
+type CallbackValidationResponse struct {
+	HubChallenge string `json:"hub.challenge"`
+}

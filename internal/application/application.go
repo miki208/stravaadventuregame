@@ -14,6 +14,7 @@ type App struct {
 	Hostname                  string
 	DefaultPageLoggedInUsers  string
 	DefaultPageLoggedOutUsers string
+	AdminPanelPage            string
 
 	Templates  *template.Template
 	SessionMgr *helper.SessionManager
@@ -26,7 +27,11 @@ type App struct {
 }
 
 func (app *App) GetFullAuthorizationCallbackUrl() string {
-	return "http://" + app.Hostname + app.StravaSvc.GetAuthorizationCallback()
+	return "https://" + app.Hostname + app.StravaSvc.GetAuthorizationCallback()
+}
+
+func (app *App) GetFullWebhookCallbackUrl() string {
+	return "https://" + app.Hostname + app.StravaSvc.GetWebhookCallback()
 }
 
 func MakeApp() *App {
@@ -47,6 +52,7 @@ func MakeApp() *App {
 		Hostname:                  conf.Hostname,
 		DefaultPageLoggedInUsers:  conf.DefaultPageLoggedInUsers,
 		DefaultPageLoggedOutUsers: conf.DefaultPageLoggedOutUsers,
+		AdminPanelPage:            conf.AdminPanelPage,
 
 		Templates:  template.Must(template.ParseFiles(templates...)),
 		SessionMgr: helper.CreateSessionManager(),
@@ -58,7 +64,9 @@ func MakeApp() *App {
 			conf.StravaConf.ClientId,
 			conf.StravaConf.ClientSecret,
 			conf.StravaConf.AuthorizationCallback,
-			conf.StravaConf.Scope),
+			conf.StravaConf.Scope,
+			conf.StravaConf.WebhookCallback,
+			conf.StravaConf.VerifyToken),
 		OrsSvc: openrouteservice.CreateService(conf.OrsConf.ApiKey),
 	}
 }

@@ -2,6 +2,7 @@
     "hostname": "localhost",
     "default_page_logged_in": "/welcome",
     "default_page_logged_out": "/",
+    "admin_panel_page": "/admin-panel",
     "path_to_templates": "/templates",
     "sqlite_db_path": "data/app.db",
     "file_db_path": "data/",
@@ -9,7 +10,9 @@
         "client_id": 0,
         "client_secret": "",
         "authorization_callback": "",
-        "scope": ""
+        "scope": "",
+        "webhook_callback": "/strava_webhook_callback",
+        "verify_token": ""
     },
     "open_route_service_config": {
         "api_key": ""

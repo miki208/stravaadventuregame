@@ -9,7 +9,9 @@ type stravaConfig struct {
 	ClientId              int    `json:"client_id"`
 	ClientSecret          string `json:"client_secret"`
 	AuthorizationCallback string `json:"authorization_callback"`
+	WebhookCallback       string `json:"webhook_callback"`
 	Scope                 string `json:"scope"`
+	VerifyToken           string `json:"verify_token"`
 }
 
 type openRouteServiceConfig struct {
@@ -20,6 +22,7 @@ type config struct {
 	Hostname                  string                  `json:"hostname"`
 	DefaultPageLoggedInUsers  string                  `json:"default_page_logged_in"`
 	DefaultPageLoggedOutUsers string                  `json:"default_page_logged_out"`
+	AdminPanelPage            string                  `json:"admin_panel_page"`
 	PathToTemplates           string                  `json:"path_to_templates"`
 	SqliteDbPath              string                  `json:"sqlite_db_path"`
 	FileDbPath                string                  `json:"file_db_path"`
@@ -48,7 +51,7 @@ func (conf *config) validate() bool {
 		return false
 	}
 
-	if conf.DefaultPageLoggedInUsers == "" || conf.DefaultPageLoggedOutUsers == "" {
+	if conf.DefaultPageLoggedInUsers == "" || conf.DefaultPageLoggedOutUsers == "" || conf.AdminPanelPage == "" {
 		return false
 	}
 
@@ -64,7 +67,8 @@ func (conf *config) validate() bool {
 		return false
 	}
 
-	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" || conf.StravaConf.Scope == "" {
+	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" ||
+		conf.StravaConf.Scope == "" || conf.StravaConf.WebhookCallback == "" || conf.StravaConf.VerifyToken == "" {
 		return false
 	}
 

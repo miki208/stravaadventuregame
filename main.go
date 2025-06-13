@@ -18,6 +18,10 @@ func main() {
 	http.HandleFunc("/start-adventure", handler.MakeHandlerWSession(app, auth.StartAdventure))
 	http.HandleFunc("/logout", handler.MakeHandlerWSession(app, auth.Logout))
 	http.HandleFunc("/deauthorize", handler.MakeHandlerWSession(app, auth.Deauthorize))
+	http.HandleFunc(app.AdminPanelPage, handler.MakeHandlerWSession(app, auth.AdminPanel))
+	http.HandleFunc("/stravawebhook/delete", handler.MakeHandlerWSession(app, auth.DeleteStravaWebhookSubscription))
+	http.HandleFunc("/stravawebhook/create", handler.MakeHandlerWSession(app, auth.CreateStravaWebhookSubscription))
+	http.HandleFunc(app.StravaSvc.GetWebhookCallback(), handler.MakeHandlerWoutSession(app, noauth.StravaWebhookCallback))
 
 	http.ListenAndServe(":80", nil)
 }

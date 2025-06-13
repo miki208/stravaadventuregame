@@ -118,3 +118,19 @@ func (athl *Athlete) Delete(db *sql.DB, tx *sql.Tx) error {
 
 	return nil
 }
+
+func IsAthleteAdmin(athlId int, db *sql.DB, tx *sql.Tx) (bool, error) {
+
+	var athlete Athlete
+	found, err := athlete.LoadById(athlId, db, tx)
+	if err != nil {
+
+		return false, err
+	}
+
+	if !found {
+		return false, errors.New("athlete not found")
+	}
+
+	return athlete.IsAdmin(), nil
+}
