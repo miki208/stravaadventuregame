@@ -101,7 +101,7 @@ func (svc *Strava) ExchangeToken(authorizationCode string) (*model.Athlete, *mod
 	return &tokenExchangeResponseObj.Athl, &stravaCredential, nil
 }
 
-func (svc *Strava) Deauthorize(athleteId int, db *sql.DB, tx *sql.Tx) error {
+func (svc *Strava) Deauthorize(athleteId int64, sendDeauthRequest bool, db *sql.DB, tx *sql.Tx) error {
 	// retrieve athlete and credentials to ensure they exist
 	credentials, err := svc.GetCredentialsForAthlete(athleteId, db, tx)
 	if err != nil {
@@ -130,44 +130,46 @@ func (svc *Strava) Deauthorize(athleteId int, db *sql.DB, tx *sql.Tx) error {
 		return &StravaError{statusCode: http.StatusNotFound, err: errors.New("athlete not found")}
 	}
 
-	// deauthorize the athlete
-	deauthorizationBody, err := json.Marshal(DeauthorizationRequest{
-		AccessToken: credentials.AccessToken,
-	})
-	if err != nil {
-		if tx != nil {
-			tx.Rollback()
+	if sendDeauthRequest {
+		// deauthorize the athlete
+		deauthorizationBody, err := json.Marshal(DeauthorizationRequest{
+			AccessToken: credentials.AccessToken,
+		})
+		if err != nil {
+			if tx != nil {
+				tx.Rollback()
+			}
+
+			return &StravaError{statusCode: http.StatusInternalServerError, err: err}
 		}
 
-		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
-	}
+		deauthorizationResponse, err := http.Post(svc.baseUrl+"/oauth/deauthorize", "application/json", bytes.NewBuffer(deauthorizationBody))
+		if err != nil {
+			if tx != nil {
+				tx.Rollback()
+			}
 
-	deauthorizationResponse, err := http.Post(svc.baseUrl+"/oauth/deauthorize", "application/json", bytes.NewBuffer(deauthorizationBody))
-	if err != nil {
-		if tx != nil {
-			tx.Rollback()
+			return &StravaError{statusCode: http.StatusInternalServerError, err: err}
 		}
 
-		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
-	}
+		defer deauthorizationResponse.Body.Close()
 
-	defer deauthorizationResponse.Body.Close()
+		_, err = io.ReadAll(deauthorizationResponse.Body)
+		if err != nil {
+			if tx != nil {
+				tx.Rollback()
+			}
 
-	_, err = io.ReadAll(deauthorizationResponse.Body)
-	if err != nil {
-		if tx != nil {
-			tx.Rollback()
+			return &StravaError{statusCode: http.StatusInternalServerError, err: err}
 		}
 
-		return &StravaError{statusCode: http.StatusInternalServerError, err: err}
-	}
+		if deauthorizationResponse.StatusCode != http.StatusOK {
+			if tx != nil {
+				tx.Rollback()
+			}
 
-	if deauthorizationResponse.StatusCode != http.StatusOK {
-		if tx != nil {
-			tx.Rollback()
+			return &StravaError{statusCode: deauthorizationResponse.StatusCode, err: errors.New("deauthorization failed")}
 		}
-
-		return &StravaError{statusCode: deauthorizationResponse.StatusCode, err: errors.New("deauthorization failed")}
 	}
 
 	// delete the athlete (and everything related to it)
@@ -226,7 +228,7 @@ func (svc *Strava) refreshTokenIfNeeded(cred *model.StravaCredential) (bool, err
 	return true, nil
 }
 
-func (svc *Strava) GetCredentialsForAthlete(athleteId int, db *sql.DB, tx *sql.Tx) (*model.StravaCredential, error) {
+func (svc *Strava) GetCredentialsForAthlete(athleteId int64, db *sql.DB, tx *sql.Tx) (*model.StravaCredential, error) {
 	cred := &model.StravaCredential{}
 
 	exists, err := cred.LoadByAthleteId(athleteId, db, tx)

@@ -8,7 +8,7 @@ import (
 )
 
 type Athlete struct {
-	Id        int    `json:"id"`
+	Id        int64  `json:"id"`
 	Username  string `json:"username"`
 	FirstName string `json:"firstname"`
 	LastName  string `json:"lastname"`
@@ -24,7 +24,7 @@ func (athl *Athlete) IsAdmin() bool {
 
 // LoadById returns true if there was a record in the database, otherwise returns false.
 // To distinguish between no records and errors, when it returns false, check for errors.
-func (athl *Athlete) LoadById(id int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func (athl *Athlete) LoadById(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var row *sql.Row
 	query := "SELECT * FROM athlete WHERE id=?"
 
@@ -50,7 +50,7 @@ func (athl *Athlete) LoadById(id int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	return true, nil
 }
 
-func AthleteExists(id int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func AthleteExists(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var temp Athlete
 
 	exists, err := temp.LoadById(id, db, tx)
@@ -119,7 +119,7 @@ func (athl *Athlete) Delete(db *sql.DB, tx *sql.Tx) error {
 	return nil
 }
 
-func IsAthleteAdmin(athlId int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func IsAthleteAdmin(athlId int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 
 	var athlete Athlete
 	found, err := athlete.LoadById(athlId, db, tx)

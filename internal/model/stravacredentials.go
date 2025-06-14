@@ -8,13 +8,13 @@ import (
 )
 
 type StravaCredential struct {
-	AthleteId    int
+	AthleteId    int64
 	AccessToken  string
 	RefreshToken string
 	ExpiresAt    int
 }
 
-func (cred *StravaCredential) LoadByAthleteId(athlId int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func (cred *StravaCredential) LoadByAthleteId(athlId int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var row *sql.Row
 	query := "SELECT * FROM StravaCredentials WHERE athlete_id=?"
 
@@ -40,7 +40,7 @@ func (cred *StravaCredential) LoadByAthleteId(athlId int, db *sql.DB, tx *sql.Tx
 	return true, nil
 }
 
-func StravaCredentialForAthleteIdExists(athlId int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func StravaCredentialForAthleteIdExists(athlId int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var temp StravaCredential
 
 	exists, err := temp.LoadByAthleteId(athlId, db, tx)

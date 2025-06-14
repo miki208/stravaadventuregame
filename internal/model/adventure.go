@@ -8,7 +8,7 @@ import (
 )
 
 type Adventure struct {
-	AthleteId           int
+	AthleteId           int64
 	StartLocation       int
 	EndLocation         int
 	CurrentLocationName string
@@ -25,7 +25,7 @@ const (
 	FilterNotCompleted
 )
 
-func GetAdventuresByAthlete(athlId int, complFilter AdventureCompletionFilter, db *sql.DB, tx *sql.Tx) ([]*Adventure, error) {
+func GetAdventuresByAthlete(athlId int64, complFilter AdventureCompletionFilter, db *sql.DB, tx *sql.Tx) ([]*Adventure, error) {
 	var query string
 	var queryParams []any
 	var err error
@@ -85,7 +85,7 @@ func GetAdventuresByAthlete(athlId int, complFilter AdventureCompletionFilter, d
 	return result, nil
 }
 
-func (adventure *Adventure) Load(athlId int, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func (adventure *Adventure) Load(athlId int64, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var row *sql.Row
 	query := "SELECT * FROM Adventure WHERE athlete_id=? AND start_location=? AND end_location=?"
 
@@ -111,7 +111,7 @@ func (adventure *Adventure) Load(athlId int, startLocation int, endLocation int,
 	return true, nil
 }
 
-func AdventureExists(athlId int, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
+func AdventureExists(athlId int64, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var temp Adventure
 
 	exists, err := temp.Load(athlId, startLocation, endLocation, db, tx)

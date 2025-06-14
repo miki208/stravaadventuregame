@@ -9,7 +9,7 @@ import (
 
 func Deauthorize(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
 	// deauthorize with the Strava API first
-	err := app.StravaSvc.Deauthorize(session.UserId, app.SqlDb, nil)
+	err := app.StravaSvc.Deauthorize(session.UserId, true, app.SqlDb, nil)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 

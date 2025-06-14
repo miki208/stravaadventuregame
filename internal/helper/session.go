@@ -7,19 +7,19 @@ import (
 )
 
 type Session struct {
-	UserId        int
+	UserId        int64
 	SessionCookie http.Cookie
 }
 
 type SessionManager struct {
 	sessionIdToSession map[string]Session
-	userIdToSessionId  map[int]string
+	userIdToSessionId  map[int64]string
 }
 
 func CreateSessionManager() *SessionManager {
 	sessionManager := &SessionManager{
 		sessionIdToSession: make(map[string]Session),
-		userIdToSessionId:  make(map[int]string),
+		userIdToSessionId:  make(map[int64]string),
 	}
 
 	return sessionManager
@@ -34,7 +34,7 @@ func (manager *SessionManager) GetSessionBySessionId(sessionId string) *Session 
 	return &session
 }
 
-func (manager *SessionManager) GetSessionByUserId(userId int) *Session {
+func (manager *SessionManager) GetSessionByUserId(userId int64) *Session {
 	sessionId, ok := manager.userIdToSessionId[userId]
 	if !ok {
 		return nil
@@ -73,7 +73,7 @@ func (manager *SessionManager) DestroySession(session Session) {
 	delete(manager.sessionIdToSession, sessionId)
 }
 
-func (manager *SessionManager) CreateSession(userId int) Session {
+func (manager *SessionManager) CreateSession(userId int64) Session {
 	session := manager.GetSessionByUserId(userId)
 	if session != nil {
 		manager.DestroySession(*session)
