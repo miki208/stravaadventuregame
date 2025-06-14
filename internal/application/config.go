@@ -28,6 +28,7 @@ type config struct {
 	FileDbPath                string                  `json:"file_db_path"`
 	StravaConf                *stravaConfig           `json:"strava_config"`
 	OrsConf                   *openRouteServiceConfig `json:"open_route_service_config"`
+	ScheduledJobIntervalSec   int                     `json:"scheduled_job_interval_sec"`
 }
 
 func (conf *config) loadFromFile(fileName string) error {
@@ -73,6 +74,10 @@ func (conf *config) validate() bool {
 	}
 
 	if conf.OrsConf.ApiKey == "" {
+		return false
+	}
+
+	if conf.ScheduledJobIntervalSec < 60 {
 		return false
 	}
 

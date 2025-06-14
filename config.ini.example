@@ -16,5 +16,6 @@
     },
     "open_route_service_config": {
         "api_key": ""
-    }
+    },
+    "scheduled_job_interval_sec": 600
 }

@@ -7,10 +7,18 @@ import (
 	"github.com/miki208/stravaadventuregame/internal/handler"
 	"github.com/miki208/stravaadventuregame/internal/handler/auth"
 	"github.com/miki208/stravaadventuregame/internal/handler/noauth"
+	"github.com/miki208/stravaadventuregame/internal/scheduledjobs"
 )
 
 func main() {
 	app := application.MakeApp()
+
+	for _, job := range scheduledjobs.GetScheduledJobs() {
+		app.CronSvc.AddJob(job)
+	}
+
+	app.CronSvc.Start()
+	defer app.CronSvc.Stop() // I'm aware this does not make sense as long as I'm using http.ListenAndServe, but it's a placeholder for future use.
 
 	http.HandleFunc(app.DefaultPageLoggedOutUsers, handler.MakeHandlerWoutSession(app, noauth.Authorize))
 	http.HandleFunc(app.StravaSvc.GetAuthorizationCallback(), handler.MakeHandlerWoutSession(app, noauth.AuthorizationCallback))

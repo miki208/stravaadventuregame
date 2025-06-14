@@ -24,6 +24,8 @@ type App struct {
 
 	StravaSvc *strava.Strava
 	OrsSvc    *openrouteservice.OpenRouteService
+
+	CronSvc *Cron
 }
 
 func (app *App) GetFullAuthorizationCallbackUrl() string {
@@ -48,7 +50,7 @@ func MakeApp() *App {
 
 	templates := getTemplateFileNames(conf.PathToTemplates)
 
-	return &App{
+	app := &App{
 		Hostname:                  conf.Hostname,
 		DefaultPageLoggedInUsers:  conf.DefaultPageLoggedInUsers,
 		DefaultPageLoggedOutUsers: conf.DefaultPageLoggedOutUsers,
@@ -69,4 +71,8 @@ func MakeApp() *App {
 			conf.StravaConf.VerifyToken),
 		OrsSvc: openrouteservice.CreateService(conf.OrsConf.ApiKey),
 	}
+
+	app.CronSvc = NewCron(app, conf.ScheduledJobIntervalSec)
+
+	return app
 }
