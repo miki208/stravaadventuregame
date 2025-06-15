@@ -9,6 +9,11 @@ package model
 // 6. Save is not atomic unless tx is provided. If row is updates, pk should not be changed
 // 7. Load loads by primary key, returns true if found, false if not found
 
+type ComparationOperation struct {
+	FieldValue any
+	Operation  string
+}
+
 // PrepareQuery prepares a SQL query with placeholders for the provided filter map.
 // It's safe to use if provided query doesn't contain placeholders and WHERE clause already.
 // Also, it does not work if WHERE clause syntaxically can't come after the provided query.
@@ -25,8 +30,14 @@ func PrepareQuery(query string, filter map[string]any) (string, []any) {
 			query += " AND "
 		}
 
-		query += key + "=?"
-		queryParams = append(queryParams, value)
+		compOp, ok := value.(ComparationOperation)
+		if ok {
+			query += key + compOp.Operation + "?"
+			queryParams = append(queryParams, compOp.FieldValue)
+		} else {
+			query += key + "=?"
+			queryParams = append(queryParams, value)
+		}
 	}
 
 	return query, queryParams

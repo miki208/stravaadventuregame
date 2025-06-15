@@ -406,7 +406,7 @@ func AllActivities(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Activity, e
 	var err error
 
 	var rows *sql.Rows
-	query, params := PrepareQuery("SELECT id, athlete_id, type, distance, start_date, moving_time, elapsed_time FROM Activity", filter)
+	query, params := PrepareQuery("SELECT id, athlete_id, type, distance, start_date, moving_time, elevation_gain FROM Activity", filter)
 	if tx != nil {
 		rows, err = tx.Query(query, params...)
 	} else {
