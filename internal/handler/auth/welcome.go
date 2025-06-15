@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/helper"
@@ -34,9 +35,11 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 	}
 
 	type AdventureExtended struct {
-		Adventure     *model.Adventure
-		StartLocation *model.Location
-		EndLocation   *model.Location
+		Adventure         *model.Adventure
+		StartLocation     *model.Location
+		EndLocation       *model.Location
+		StartDateFormated string
+		EndDateFormated   string
 	}
 
 	adventureToAdventureExtended := func(adv *model.Adventure) (AdventureExtended, error) {
@@ -53,9 +56,11 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 		}
 
 		return AdventureExtended{
-			Adventure:     adv,
-			StartLocation: &startLocation,
-			EndLocation:   &endLocation,
+			Adventure:         adv,
+			StartLocation:     &startLocation,
+			EndLocation:       &endLocation,
+			StartDateFormated: time.Unix(int64(adv.StartDate), 0).UTC().Format(time.DateTime),
+			EndDateFormated:   time.Unix(int64(adv.EndDate), 0).UTC().Format(time.DateTime),
 		}, nil
 	}
 

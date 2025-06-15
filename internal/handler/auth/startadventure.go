@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/helper"
@@ -111,6 +112,8 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 		CurrentDistance:     0,
 		TotalDistance:       adventureCourse.Summary.Distance,
 		Completed:           0,
+		StartDate:           int(time.Now().Unix()),
+		EndDate:             0,
 	}
 
 	err = adventure.Save(app.SqlDb, nil)

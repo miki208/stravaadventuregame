@@ -13,6 +13,8 @@ type Adventure struct {
 	CurrentDistance     float32
 	TotalDistance       float32
 	Completed           int
+	StartDate           int
+	EndDate             int
 }
 
 func (adventure *Adventure) Load(athlId int64, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
@@ -29,7 +31,7 @@ func (adventure *Adventure) Load(athlId int64, startLocation int, endLocation in
 		row = db.QueryRow(query, params...)
 	}
 
-	err := row.Scan(&adventure.AthleteId, &adventure.StartLocation, &adventure.EndLocation, &adventure.CurrentLocationName, &adventure.CurrentDistance, &adventure.TotalDistance, &adventure.Completed)
+	err := row.Scan(&adventure.AthleteId, &adventure.StartLocation, &adventure.EndLocation, &adventure.CurrentLocationName, &adventure.CurrentDistance, &adventure.TotalDistance, &adventure.Completed, &adventure.StartDate, &adventure.EndDate)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
@@ -51,20 +53,20 @@ func (adv *Adventure) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if found {
-		query := "UPDATE Adventure SET current_location_name=?, current_distance=?, total_distance=?, completed=? WHERE athlete_id=? AND start_location=? AND end_location=?"
+		query := "UPDATE Adventure SET current_location_name=?, current_distance=?, total_distance=?, completed=?, start_date=?, end_date=? WHERE athlete_id=? AND start_location=? AND end_location=?"
 
 		if tx != nil {
-			_, err = tx.Exec(query, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.AthleteId, adv.StartLocation, adv.EndLocation)
+			_, err = tx.Exec(query, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.StartDate, adv.EndDate, adv.AthleteId, adv.StartLocation, adv.EndLocation)
 		} else {
-			_, err = db.Exec(query, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.AthleteId, adv.StartLocation, adv.EndLocation)
+			_, err = db.Exec(query, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.StartDate, adv.EndDate, adv.AthleteId, adv.StartLocation, adv.EndLocation)
 		}
 	} else {
-		query := "INSERT INTO Adventure VALUES(?, ?, ?, ?, ?, ?, ?)"
+		query := "INSERT INTO Adventure VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 		if tx != nil {
-			_, err = tx.Exec(query, adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed)
+			_, err = tx.Exec(query, adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.StartDate, adv.EndDate)
 		} else {
-			_, err = db.Exec(query, adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed)
+			_, err = db.Exec(query, adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.StartDate, adv.EndDate)
 		}
 	}
 
@@ -98,7 +100,9 @@ func AllAdventures(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Adventure, 
 		adventures = append(adventures, Adventure{})
 
 		adventureToEdit := &adventures[len(adventures)-1]
-		if err = rows.Scan(&adventureToEdit.AthleteId, &adventureToEdit.StartLocation, &adventureToEdit.EndLocation, &adventureToEdit.CurrentLocationName, &adventureToEdit.CurrentDistance, &adventureToEdit.TotalDistance, &adventureToEdit.Completed); err != nil {
+		if err = rows.Scan(&adventureToEdit.AthleteId, &adventureToEdit.StartLocation, &adventureToEdit.EndLocation,
+			&adventureToEdit.CurrentLocationName, &adventureToEdit.CurrentDistance, &adventureToEdit.TotalDistance,
+			&adventureToEdit.Completed, &adventureToEdit.StartDate, &adventureToEdit.EndDate); err != nil {
 			return nil, err
 		}
 	}

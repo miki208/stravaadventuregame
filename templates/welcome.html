@@ -54,6 +54,7 @@
         <th>End</th>
         <th>Distance (km)</th>
         <th>Current location</th>
+        <th>Start date</th>
       </tr>
     </thead>
     <tbody>
@@ -63,6 +64,7 @@
         <td>{{.EndLocation.Name}}</td>
         <td>{{.Adventure.CurrentDistance}}/{{.Adventure.TotalDistance}} km</td>
         <td>{{.Adventure.CurrentLocationName}}</td>
+        <td>{{.StartDateFormated}} (GMT)</td>
       </tr>
       {{end}}
     </tbody>
@@ -80,9 +82,16 @@
         <th>Start</th>
         <th>End</th>
         <th>Distance (km)</th>
+        <th>Start date</th>
+        <th>End date</th>
       </tr>
     </thead>
     <tbody>
+        <td>{{.StartLocation.Name}}</td>
+        <td>{{.EndLocation.Name}}</td>
+        <td>{{.Adventure.CurrentDistance}}/{{.Adventure.TotalDistance}} km</td>
+        <td>{{.StartDateFormated}} (GMT)</td>
+        <td>{{.EndDateFormatted}} (GMT)</td>
     </tbody>
   </table>
   {{else}}

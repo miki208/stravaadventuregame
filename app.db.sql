@@ -19,20 +19,6 @@ CREATE TABLE IF NOT EXISTS "Location" (
 	"name"	TEXT NOT NULL,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
-DROP TABLE IF EXISTS "Adventure";
-CREATE TABLE IF NOT EXISTS "Adventure" (
-	"athlete_id"	INTEGER NOT NULL,
-	"start_location"	INTEGER NOT NULL,
-	"end_location"	INTEGER NOT NULL,
-	"current_location_name"	TEXT NOT NULL,
-	"current_distance"	REAL NOT NULL DEFAULT 0,
-	"total_distance"	REAL NOT NULL,
-	"completed"	INTEGER NOT NULL DEFAULT 0,
-	FOREIGN KEY("start_location") REFERENCES "Location"("id") ON DELETE CASCADE,
-	FOREIGN KEY("end_location") REFERENCES "Location"("id") ON DELETE CASCADE,
-	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
-	PRIMARY KEY("athlete_id","start_location","end_location")
-);
 DROP TABLE IF EXISTS "Activity";
 CREATE TABLE IF NOT EXISTS "Activity" (
 	"id"	INTEGER NOT NULL,
@@ -61,5 +47,21 @@ CREATE TABLE IF NOT EXISTS "StravaCredential" (
 	"expires_at"	INTEGER NOT NULL,
 	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
 	PRIMARY KEY("athlete_id")
+);
+DROP TABLE IF EXISTS "Adventure";
+CREATE TABLE IF NOT EXISTS "Adventure" (
+	"athlete_id"	INTEGER NOT NULL,
+	"start_location"	INTEGER NOT NULL,
+	"end_location"	INTEGER NOT NULL,
+	"current_location_name"	TEXT NOT NULL,
+	"current_distance"	REAL NOT NULL DEFAULT 0,
+	"total_distance"	REAL NOT NULL,
+	"completed"	INTEGER NOT NULL DEFAULT 0,
+	"start_date"	INTEGER NOT NULL,
+	"end_date"	INTEGER,
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
+	FOREIGN KEY("start_location") REFERENCES "Location"("id") ON DELETE CASCADE,
+	FOREIGN KEY("end_location") REFERENCES "Location"("id") ON DELETE CASCADE,
+	PRIMARY KEY("athlete_id","start_location","end_location")
 );
 COMMIT;
