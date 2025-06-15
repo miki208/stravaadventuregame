@@ -1,12 +1,13 @@
 package scheduledjobs
 
 import (
-	"fmt"
+	"net/http"
 	"slices"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/database"
 	"github.com/miki208/stravaadventuregame/internal/model"
+	"github.com/miki208/stravaadventuregame/internal/service/strava"
 )
 
 func StravaPendingActivityProcessor(app *application.App) {
@@ -16,7 +17,9 @@ func StravaPendingActivityProcessor(app *application.App) {
 	}
 
 	for _, ev := range evs {
-		processOneActivity(app, &ev)
+		if !processOneActivity(app, &ev) {
+			break // if we got a rate limit error, we stop processing
+		}
 	}
 }
 
@@ -29,10 +32,10 @@ const (
 	ActivityNotProcessed
 )
 
-func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
+func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool {
 	tx, err := app.SqlDb.Begin()
 	if err != nil {
-		return
+		return true
 	}
 
 	defer tx.Rollback()
@@ -41,7 +44,7 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
 
 	// in all cases we need this event to be deleted from the database
 	if err = ev.Delete(app.SqlDb, tx); err != nil {
-		return
+		return true
 	}
 
 	// check if the athlete exists
@@ -49,7 +52,7 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
 	athlete := model.NewAthlete()
 	athleteExists, err = athlete.Load(ev.OwnerId, app.SqlDb, tx)
 	if err != nil {
-		return
+		return true
 	}
 
 	var existingActivity model.Activity
@@ -59,7 +62,7 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
 		var foundOld bool
 		foundOld, err = existingActivity.Load(ev.ObjectId, app.SqlDb, tx)
 		if err != nil {
-			return
+			return true
 		}
 
 		if ev.AspectType == "delete" {
@@ -70,14 +73,19 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
 
 				err = existingActivity.Delete(app.SqlDb, tx)
 				if err != nil {
-					return
+					return true
 				}
 			}
 		} else {
 			// if event is update or create, we need to fetch the activity and check if it should be accepted/modified in db
 			newActivity, err = app.StravaSvc.GetActivity(athlete.Id, ev.ObjectId, app.SqlDb, tx)
 			if err != nil {
-				return
+				stravaErr, ok := err.(*strava.StravaError)
+				if ok && stravaErr.StatusCode() == http.StatusTooManyRequests {
+					return false
+				}
+
+				return true
 			}
 
 			allowedSportTypes := []string{"Hike", "Run", "TrailRun", "VirtualRun", "Walk", "Wheelchair"}
@@ -98,14 +106,14 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
 			}
 
 			if err != nil {
-				return
+				return true
 			}
 		}
 	}
 
 	err = database.CommitOrRollbackSQLiteTransaction(tx)
 	if err != nil {
-		return
+		return true
 	}
 
 	if processingResult == ActivityDeleted {
@@ -115,16 +123,122 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) {
 	} else if processingResult == ActivityUpdated {
 		onActivityUpdated(app, &existingActivity, newActivity)
 	}
+
+	return true
 }
 
 func onActivityDeleted(app *application.App, activity *model.Activity) {
-	fmt.Printf("Activity %d deleted\n", activity.Id)
+	tx, err := app.SqlDb.Begin()
+	if err != nil {
+		return
+	}
+
+	defer tx.Rollback()
+
+	startedAdventure, err := model.AllAdventures(app.SqlDb, tx, map[string]any{
+		"athlete_id": activity.AthleteId,
+		"completed":  0,
+	})
+	if err != nil {
+		return
+	}
+
+	if len(startedAdventure) > 0 && startedAdventure[0].StartDate < activity.StartDate {
+		if startedAdventure[0].CurrentDistance > activity.Distance {
+			startedAdventure[0].CurrentDistance -= activity.Distance
+		} else {
+			startedAdventure[0].CurrentDistance = 0
+		}
+
+		err = startedAdventure[0].Save(app.SqlDb, tx)
+		if err != nil {
+			return
+		}
+	}
+
+	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+	}
 }
 
 func onActivityCreated(app *application.App, activity *model.Activity) {
-	fmt.Printf("Activity %d created (distance %f)\n", activity.Id, activity.Distance)
+	tx, err := app.SqlDb.Begin()
+	if err != nil {
+		return
+	}
+
+	defer tx.Rollback()
+
+	// check if there is any started adventure
+	startedAdventure, err := model.AllAdventures(app.SqlDb, tx, map[string]any{
+		"athlete_id": activity.AthleteId,
+		"completed":  0,
+	})
+	if err != nil {
+		return
+	}
+
+	if len(startedAdventure) > 0 && startedAdventure[0].StartDate <= activity.StartDate {
+		// if there is an adventure that started before this activity, we can add the activity's distance to it
+		startedAdventure[0].CurrentDistance += activity.Distance
+
+		if startedAdventure[0].CurrentDistance >= startedAdventure[0].TotalDistance {
+			startedAdventure[0].Completed = 1
+			startedAdventure[0].EndDate = activity.StartDate + activity.MovingTime
+		}
+
+		err = startedAdventure[0].Save(app.SqlDb, tx)
+		if err != nil {
+			return
+		}
+	}
+
+	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+		// update strava activity description
+	}
 }
 
 func onActivityUpdated(app *application.App, oldActivity *model.Activity, newActivity *model.Activity) {
-	fmt.Printf("Activity %d updated (distance %f -> %f)\n", oldActivity.Id, oldActivity.Distance, newActivity.Distance)
+	tx, err := app.SqlDb.Begin()
+	if err != nil {
+		return
+	}
+
+	defer tx.Rollback()
+
+	// check if there is any started adventure
+	startedAdventure, err := model.AllAdventures(app.SqlDb, tx, map[string]any{
+		"athlete_id": newActivity.AthleteId,
+		"completed":  0,
+	})
+	if err != nil {
+		return
+	}
+
+	if len(startedAdventure) > 0 {
+		var distanceToAdd float32
+		if startedAdventure[0].StartDate <= oldActivity.StartDate && startedAdventure[0].StartDate > newActivity.StartDate {
+			distanceToAdd = -oldActivity.Distance
+		} else if startedAdventure[0].StartDate > oldActivity.StartDate && startedAdventure[0].StartDate <= newActivity.StartDate {
+			distanceToAdd = newActivity.Distance
+		} else if startedAdventure[0].StartDate <= oldActivity.StartDate && startedAdventure[0].StartDate <= newActivity.StartDate {
+			distanceToAdd = newActivity.Distance - oldActivity.Distance
+		}
+
+		startedAdventure[0].CurrentDistance += distanceToAdd
+		if startedAdventure[0].CurrentDistance < 0 {
+			startedAdventure[0].CurrentDistance = 0
+		} else if startedAdventure[0].CurrentDistance >= startedAdventure[0].TotalDistance {
+			startedAdventure[0].Completed = 1
+			startedAdventure[0].EndDate = newActivity.StartDate + newActivity.MovingTime
+		}
+
+		err = startedAdventure[0].Save(app.SqlDb, tx)
+		if err != nil {
+			return
+		}
+	}
+
+	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+		// update strava activity description
+	}
 }
