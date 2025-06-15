@@ -12,71 +12,22 @@ type Location struct {
 	Name string
 }
 
-func GetLocations(db *sql.DB, tx *sql.Tx) ([]*Location, error) {
-	query := "SELECT * FROM Location"
-
-	var result []*Location
-
+func (location *Location) Load(id int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var err error
-	var rows *sql.Rows
-	if tx != nil {
-		rows, err = tx.Query(query)
-	} else {
-		rows, err = db.Query(query)
-	}
 
-	if err != nil {
-		if tx != nil {
-			tx.Rollback()
-		}
+	query, params := PrepareQuery("SELECT * FROM Location", map[string]any{"id": id})
 
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		result = append(result, &Location{})
-
-		location := result[len(result)-1]
-		if err = rows.Scan(&location.Id, &location.Lat, &location.Lon, &location.Name); err != nil {
-			if tx != nil {
-				tx.Rollback()
-			}
-
-			return nil, err
-		}
-	}
-
-	if err = rows.Err(); err != nil {
-		if tx != nil {
-			tx.Rollback()
-		}
-
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (location *Location) LoadById(id int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var row *sql.Row
-	query := "SELECT * FROM Location WHERE id=?"
-
 	if tx != nil {
-		row = tx.QueryRow(query, id)
+		row = tx.QueryRow(query, params...)
 	} else {
-		row = db.QueryRow(query, id)
+		row = db.QueryRow(query, params...)
 	}
 
-	err := row.Scan(&location.Id, &location.Lat, &location.Lon, &location.Name)
+	err = row.Scan(&location.Id, &location.Lat, &location.Lon, &location.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
-
-		if tx != nil {
-			tx.Rollback()
+			err = nil
 		}
 
 		return false, err
@@ -88,10 +39,38 @@ func (location *Location) LoadById(id int, db *sql.DB, tx *sql.Tx) (bool, error)
 func LocationExists(id int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var temp Location
 
-	exists, err := temp.LoadById(id, db, tx)
+	return temp.Load(id, db, tx)
+}
+
+func AllLocations(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Location, error) {
+	var err error
+
+	var rows *sql.Rows
+	query, params := PrepareQuery("SELECT * FROM Location", filter)
+	if tx != nil {
+		rows, err = tx.Query(query, params...)
+	} else {
+		rows, err = db.Query(query, params...)
+	}
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return exists, nil
+	defer rows.Close()
+
+	var locatioons []Location
+	for rows.Next() {
+		locatioons = append(locatioons, Location{})
+
+		locationToEdit := &locatioons[len(locatioons)-1]
+		if err = rows.Scan(&locationToEdit.Id, &locationToEdit.Lat, &locationToEdit.Lon, &locationToEdit.Name); err != nil {
+			return nil, err
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return locatioons, nil
 }

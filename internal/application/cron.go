@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	"slices"
 	"sync"
 	"time"
@@ -52,7 +51,6 @@ func (c *Cron) Stop() {
 
 func (c *Cron) Start() {
 	go func() {
-		fmt.Println("Cron start")
 		timer := time.NewTimer(time.Second * time.Duration(c.frequency))
 
 	loop:
@@ -61,7 +59,6 @@ func (c *Cron) Start() {
 			case <-c.exitCh:
 				break loop
 			case <-timer.C:
-				fmt.Println("Cron tick")
 				c.jobsMutex.Lock()
 				jobsCopy := slices.Clone(c.jobs)
 				c.jobsMutex.Unlock()

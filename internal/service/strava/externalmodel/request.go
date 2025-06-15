@@ -1,6 +1,4 @@
-package strava
-
-import "github.com/miki208/stravaadventuregame/internal/model"
+package externalmodel
 
 type TokenExchangeRequest struct {
 	ClientId     int    `json:"client_id"`
@@ -10,12 +8,12 @@ type TokenExchangeRequest struct {
 }
 
 type TokenExchangeResponse struct {
-	TokenType    string        `json:"token_type"`
-	AccessToken  string        `json:"access_token"`
-	RefreshToken string        `json:"refresh_token"`
-	ExpiresAt    int           `json:"expires_at"`
-	ExpiresIn    int           `json:"expires_in"`
-	Athl         model.Athlete `json:"athlete"`
+	TokenType    string  `json:"token_type"`
+	AccessToken  string  `json:"access_token"`
+	RefreshToken string  `json:"refresh_token"`
+	ExpiresAt    int     `json:"expires_at"`
+	ExpiresIn    int     `json:"expires_in"`
+	Athl         Athlete `json:"athlete"`
 }
 
 type TokenRefreshRequest struct {

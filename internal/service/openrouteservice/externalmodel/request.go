@@ -1,6 +1,4 @@
-package openrouteservice
-
-import "github.com/miki208/stravaadventuregame/internal/model"
+package externalmodel
 
 type DirectionsRequest struct {
 	Coordinates [][]float64 `json:"coordinates"`
@@ -8,5 +6,5 @@ type DirectionsRequest struct {
 }
 
 type DirectionsResponse struct {
-	Routes []model.DirectionsRoute `json:"routes"`
+	Routes []DirectionsRoute `json:"routes"`
 }

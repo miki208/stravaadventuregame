@@ -21,7 +21,7 @@ func main() {
 	defer app.CronSvc.Stop() // I'm aware this does not make sense as long as I'm using http.ListenAndServe, but it's a placeholder for future use.
 
 	http.HandleFunc(app.DefaultPageLoggedOutUsers, handler.MakeHandlerWoutSession(app, noauth.Authorize))
-	http.HandleFunc(app.StravaSvc.GetAuthorizationCallback(), handler.MakeHandlerWoutSession(app, noauth.AuthorizationCallback))
+	http.HandleFunc(app.StravaSvc.GetAuthorizationCallback(), handler.MakeHandlerWoutSession(app, noauth.StravaAuthCallback))
 	http.HandleFunc(app.DefaultPageLoggedInUsers, handler.MakeHandlerWSession(app, auth.Welcome))
 	http.HandleFunc("/start-adventure", handler.MakeHandlerWSession(app, auth.StartAdventure))
 	http.HandleFunc("/logout", handler.MakeHandlerWSession(app, auth.Logout))

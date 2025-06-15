@@ -9,9 +9,9 @@ import (
 )
 
 func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
-	var athlete model.Athlete
+	athlete := model.NewAthlete()
 
-	exists, err := athlete.LoadById(session.UserId, app.SqlDb, nil)
+	exists, err := athlete.Load(session.UserId, app.SqlDb, nil)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -26,7 +26,7 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 		return
 	}
 
-	availableLocations, err := model.GetLocations(app.SqlDb, nil)
+	availableLocations, err := model.AllLocations(app.SqlDb, nil, nil)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -39,29 +39,29 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 		EndLocation   *model.Location
 	}
 
-	adventureToAdventureExtended := func(adv *model.Adventure) (*AdventureExtended, error) {
+	adventureToAdventureExtended := func(adv *model.Adventure) (AdventureExtended, error) {
 		var startLocation, endLocation model.Location
 
-		found, err := startLocation.LoadById(adv.StartLocation, app.SqlDb, nil)
+		found, err := startLocation.Load(adv.StartLocation, app.SqlDb, nil)
 		if err != nil || !found {
-			return nil, err
+			return AdventureExtended{}, err
 		}
 
-		found, err = endLocation.LoadById(adv.EndLocation, app.SqlDb, nil)
+		found, err = endLocation.Load(adv.EndLocation, app.SqlDb, nil)
 		if err != nil || !found {
-			return nil, err
+			return AdventureExtended{}, err
 		}
 
-		return &AdventureExtended{
+		return AdventureExtended{
 			Adventure:     adv,
 			StartLocation: &startLocation,
 			EndLocation:   &endLocation,
 		}, nil
 	}
 
-	var startedAdventuresExtended []*AdventureExtended
+	var startedAdventuresExtended []AdventureExtended
 
-	startedAdventures, err := model.GetAdventuresByAthlete(athlete.Id, model.FilterNotCompleted, app.SqlDb, nil)
+	startedAdventures, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": athlete.Id, "completed": 0})
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -69,7 +69,7 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 	}
 
 	for _, adv := range startedAdventures {
-		adventureExtended, err := adventureToAdventureExtended(adv)
+		adventureExtended, err := adventureToAdventureExtended(&adv)
 		if err != nil {
 			http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -79,9 +79,9 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 		startedAdventuresExtended = append(startedAdventuresExtended, adventureExtended)
 	}
 
-	var completedAdventuresExtended []*AdventureExtended
+	var completedAdventuresExtended []AdventureExtended
 
-	completedAdventures, err := model.GetAdventuresByAthlete(athlete.Id, model.FilterCompleted, app.SqlDb, nil)
+	completedAdventures, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": athlete.Id, "completed": 1})
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -89,7 +89,7 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 	}
 
 	for _, adv := range completedAdventures {
-		adventureExtended, err := adventureToAdventureExtended(adv)
+		adventureExtended, err := adventureToAdventureExtended(&adv)
 		if err != nil {
 			http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -100,10 +100,10 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 	}
 
 	err = app.Templates.ExecuteTemplate(resp, "welcome.html", struct {
-		Athl                model.Athlete
-		StartedAdventures   []*AdventureExtended
-		CompletedAdventures []*AdventureExtended
-		AvailableLocations  []*model.Location
+		Athl                *model.Athlete
+		StartedAdventures   []AdventureExtended
+		CompletedAdventures []AdventureExtended
+		AvailableLocations  []model.Location
 	}{
 		Athl:                athlete,
 		StartedAdventures:   startedAdventuresExtended,

@@ -5,10 +5,9 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/database"
-	"github.com/miki208/stravaadventuregame/internal/service/strava"
 )
 
-func AuthorizationCallback(w http.ResponseWriter, req *http.Request, app *application.App) {
+func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *application.App) {
 	query := req.URL.Query()
 
 	if query.Has("error") {
@@ -37,19 +36,18 @@ func AuthorizationCallback(w http.ResponseWriter, req *http.Request, app *applic
 
 	athlete, credentials, err := app.StravaSvc.ExchangeToken(query.Get("code"))
 	if err != nil {
-		stravaError := err.(*strava.StravaError)
-
-		http.Error(w, stravaError.Error(), stravaError.StatusCode())
+		http.Error(w, err.Error(), http.StatusFailedDependency)
 
 		return
 	}
 
-	_, tx, err := database.GetOrCreateSQLiteTransaction(app.SqlDb, nil)
+	tx, err := app.SqlDb.Begin()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
+	defer tx.Rollback()
 
 	err = athlete.Save(app.SqlDb, tx)
 	if err != nil {

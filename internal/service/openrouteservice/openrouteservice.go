@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/miki208/stravaadventuregame/internal/model"
+	"github.com/miki208/stravaadventuregame/internal/service/openrouteservice/externalmodel"
 )
 
 type OpenRouteService struct {
@@ -27,7 +28,7 @@ func CreateService(apiKey string) *OpenRouteService {
 }
 
 func (ors *OpenRouteService) GetDirections(latStart, lonStart, latEnd, lonEnd float64, units string) (*model.DirectionsRoute, error) {
-	directionsRequestJson, err := json.Marshal(&DirectionsRequest{
+	directionsRequestJson, err := json.Marshal(&externalmodel.DirectionsRequest{
 		Coordinates: [][]float64{{lonStart, latStart}, {lonEnd, latEnd}},
 		Units:       units,
 	})
@@ -35,7 +36,7 @@ func (ors *OpenRouteService) GetDirections(latStart, lonStart, latEnd, lonEnd fl
 		return nil, &OpenRouteServiceError{statusCode: http.StatusInternalServerError, err: err}
 	}
 
-	directionsRequest, err := http.NewRequest("POST", ors.baseUrl+"/directions/driving-car", bytes.NewBuffer(directionsRequestJson))
+	directionsRequest, err := http.NewRequest(http.MethodPost, ors.baseUrl+"/directions/driving-car", bytes.NewBuffer(directionsRequestJson))
 	if err != nil {
 		return nil, &OpenRouteServiceError{statusCode: http.StatusInternalServerError, err: err}
 	}
@@ -59,7 +60,7 @@ func (ors *OpenRouteService) GetDirections(latStart, lonStart, latEnd, lonEnd fl
 		return nil, &OpenRouteServiceError{statusCode: http.StatusFailedDependency, err: errors.New("getting directions via external api failed")}
 	}
 
-	var directionsResponseObj DirectionsResponse
+	var directionsResponseObj externalmodel.DirectionsResponse
 	err = json.Unmarshal(directionsResponseBody, &directionsResponseObj)
 	if err != nil {
 		return nil, &OpenRouteServiceError{statusCode: http.StatusInternalServerError, err: err}
@@ -69,5 +70,8 @@ func (ors *OpenRouteService) GetDirections(latStart, lonStart, latEnd, lonEnd fl
 		return nil, &OpenRouteServiceError{statusCode: http.StatusFailedDependency, err: errors.New("routes returned from the external api are empty")}
 	}
 
-	return &directionsResponseObj.Routes[0], nil
+	internalDirectionsRoute := &model.DirectionsRoute{}
+	internalDirectionsRoute.FromExternalModel(&directionsResponseObj.Routes[0])
+
+	return internalDirectionsRoute, nil
 }

@@ -34,7 +34,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 	}
 
 	// make sure that user is not already on an adventure
-	adventuresStarted, err := model.GetAdventuresByAthlete(session.UserId, model.FilterNotCompleted, app.SqlDb, nil)
+	adventuresStarted, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": session.UserId, "completed": 0})
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -48,7 +48,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 
 	// if everything is ok, these locations should be in the database, load them
 	var startLocation model.Location
-	found, err := startLocation.LoadById(startLocationId, app.SqlDb, nil)
+	found, err := startLocation.Load(startLocationId, app.SqlDb, nil)
 	if err != nil || !found {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -56,7 +56,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 	}
 
 	var stopLocation model.Location
-	found, err = stopLocation.LoadById(stopLocationId, app.SqlDb, nil)
+	found, err = stopLocation.Load(stopLocationId, app.SqlDb, nil)
 	if err != nil || !found {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
@@ -97,7 +97,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 		adventureCourse = route
 	} else {
 		// just read the course from the database
-		adventureCourse = &model.DirectionsRoute{}
+		adventureCourse = model.NewDirectionsRoute()
 
 		app.FileDb.Read("course", dbName, adventureCourse)
 	}

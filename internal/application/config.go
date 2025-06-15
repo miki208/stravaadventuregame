@@ -6,12 +6,13 @@ import (
 )
 
 type stravaConfig struct {
-	ClientId              int    `json:"client_id"`
-	ClientSecret          string `json:"client_secret"`
-	AuthorizationCallback string `json:"authorization_callback"`
-	WebhookCallback       string `json:"webhook_callback"`
-	Scope                 string `json:"scope"`
-	VerifyToken           string `json:"verify_token"`
+	ClientId                     int    `json:"client_id"`
+	ClientSecret                 string `json:"client_secret"`
+	AuthorizationCallback        string `json:"authorization_callback"`
+	WebhookCallback              string `json:"webhook_callback"`
+	Scope                        string `json:"scope"`
+	VerifyToken                  string `json:"verify_token"`
+	DeleteOldActivitiesAfterDays int    `json:"delete_old_activities_after_days"`
 }
 
 type openRouteServiceConfig struct {
@@ -69,7 +70,7 @@ func (conf *config) validate() bool {
 	}
 
 	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" ||
-		conf.StravaConf.Scope == "" || conf.StravaConf.WebhookCallback == "" || conf.StravaConf.VerifyToken == "" {
+		conf.StravaConf.Scope == "" || conf.StravaConf.WebhookCallback == "" || conf.StravaConf.VerifyToken == "" || conf.StravaConf.DeleteOldActivitiesAfterDays < 1 {
 		return false
 	}
 

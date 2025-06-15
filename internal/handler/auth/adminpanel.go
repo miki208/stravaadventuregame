@@ -9,8 +9,8 @@ import (
 )
 
 func AdminPanel(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
-	var athlete model.Athlete
-	found, err := athlete.LoadById(session.UserId, app.SqlDb, nil)
+	athlete := model.NewAthlete()
+	found, err := athlete.Load(session.UserId, app.SqlDb, nil)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 

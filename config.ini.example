@@ -12,7 +12,8 @@
         "authorization_callback": "",
         "scope": "",
         "webhook_callback": "/strava_webhook_callback",
-        "verify_token": ""
+        "verify_token": "",
+        "delete_old_activities_after_days": 10
     },
     "open_route_service_config": {
         "api_key": ""

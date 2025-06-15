@@ -3,8 +3,6 @@ package model
 import (
 	"database/sql"
 	"errors"
-
-	"github.com/miki208/stravaadventuregame/internal/database"
 )
 
 type Adventure struct {
@@ -17,92 +15,24 @@ type Adventure struct {
 	Completed           int
 }
 
-type AdventureCompletionFilter int
-
-const (
-	DontFilterCompletion AdventureCompletionFilter = iota
-	FilterCompleted
-	FilterNotCompleted
-)
-
-func GetAdventuresByAthlete(athlId int64, complFilter AdventureCompletionFilter, db *sql.DB, tx *sql.Tx) ([]*Adventure, error) {
-	var query string
-	var queryParams []any
-	var err error
-
-	if complFilter == DontFilterCompletion {
-		query = "SELECT * FROM Adventure"
-	} else {
-		query = "SELECT * FROM Adventure WHERE completed=?"
-
-		if complFilter == FilterCompleted {
-			queryParams = append(queryParams, 1)
-		} else {
-			queryParams = append(queryParams, 0)
-		}
-	}
-
-	var result []*Adventure
-
-	var rows *sql.Rows
-	if tx != nil {
-		rows, err = tx.Query(query, queryParams...)
-	} else {
-		rows, err = db.Query(query, queryParams...)
-	}
-
-	if err != nil {
-		if tx != nil {
-			tx.Rollback()
-		}
-
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		result = append(result, &Adventure{})
-
-		adventure := result[len(result)-1]
-		if err = rows.Scan(&adventure.AthleteId, &adventure.StartLocation, &adventure.EndLocation, &adventure.CurrentLocationName, &adventure.CurrentDistance, &adventure.TotalDistance, &adventure.Completed); err != nil {
-			if tx != nil {
-				tx.Rollback()
-			}
-
-			return nil, err
-		}
-	}
-
-	if err = rows.Err(); err != nil {
-		if tx != nil {
-			tx.Rollback()
-		}
-
-		return nil, err
-	}
-
-	return result, nil
-}
-
 func (adventure *Adventure) Load(athlId int64, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
-	var row *sql.Row
-	query := "SELECT * FROM Adventure WHERE athlete_id=? AND start_location=? AND end_location=?"
+	query, params := PrepareQuery("SELECT * FROM Adventure", map[string]any{
+		"athlete_id":     athlId,
+		"start_location": startLocation,
+		"end_location":   endLocation,
+	})
 
+	var row *sql.Row
 	if tx != nil {
-		row = tx.QueryRow(query, athlId, startLocation, endLocation)
+		row = tx.QueryRow(query, params...)
 	} else {
-		row = db.QueryRow(query, athlId, startLocation, endLocation)
+		row = db.QueryRow(query, params...)
 	}
 
 	err := row.Scan(&adventure.AthleteId, &adventure.StartLocation, &adventure.EndLocation, &adventure.CurrentLocationName, &adventure.CurrentDistance, &adventure.TotalDistance, &adventure.Completed)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
-
-		if tx != nil {
-			tx.Rollback()
+			err = nil
 		}
 
 		return false, err
@@ -111,50 +41,71 @@ func (adventure *Adventure) Load(athlId int64, startLocation int, endLocation in
 	return true, nil
 }
 
+func (adv *Adventure) Save(db *sql.DB, tx *sql.Tx) error {
+	var err error
+
+	var found bool
+	found, err = AdventureExists(adv.AthleteId, adv.StartLocation, adv.EndLocation, db, tx)
+	if err != nil {
+		return err
+	}
+
+	if found {
+		query := "UPDATE Adventure SET current_location_name=?, current_distance=?, total_distance=?, completed=? WHERE athlete_id=? AND start_location=? AND end_location=?"
+
+		if tx != nil {
+			_, err = tx.Exec(query, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.AthleteId, adv.StartLocation, adv.EndLocation)
+		} else {
+			_, err = db.Exec(query, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.AthleteId, adv.StartLocation, adv.EndLocation)
+		}
+	} else {
+		query := "INSERT INTO Adventure VALUES(?, ?, ?, ?, ?, ?, ?)"
+
+		if tx != nil {
+			_, err = tx.Exec(query, adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed)
+		} else {
+			_, err = db.Exec(query, adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed)
+		}
+	}
+
+	return err
+}
+
 func AdventureExists(athlId int64, startLocation int, endLocation int, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var temp Adventure
 
-	exists, err := temp.Load(athlId, startLocation, endLocation, db, tx)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
+	return temp.Load(athlId, startLocation, endLocation, db, tx)
 }
 
-func (adv *Adventure) Save(db *sql.DB, tx *sql.Tx) error {
-	isExternalTx, tx, err := database.GetOrCreateSQLiteTransaction(db, tx)
-	if err != nil {
-		return err
-	}
+func AllAdventures(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Adventure, error) {
+	var err error
 
-	exists, err := AdventureExists(adv.AthleteId, adv.StartLocation, adv.EndLocation, db, tx)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		_, err = tx.Exec("UPDATE Adventure SET current_location_name=?, current_distance=?, total_distance=?, completed=? WHERE athlete_id=? AND start_location=? AND end_location=?", adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed, adv.AthleteId, adv.StartLocation, adv.EndLocation)
-		if err != nil {
-			tx.Rollback()
-
-			return err
-		}
+	var rows *sql.Rows
+	query, params := PrepareQuery("SELECT * FROM Adventure", filter)
+	if tx != nil {
+		rows, err = tx.Query(query, params...)
 	} else {
-		_, err = tx.Exec("INSERT INTO Adventure VALUES(?, ?, ?, ?, ?, ?, ?)", adv.AthleteId, adv.StartLocation, adv.EndLocation, adv.CurrentLocationName, adv.CurrentDistance, adv.TotalDistance, adv.Completed)
-		if err != nil {
-			tx.Rollback()
+		rows, err = db.Query(query, params...)
+	}
+	if err != nil {
+		return nil, err
+	}
 
-			return err
+	defer rows.Close()
+
+	var adventures []Adventure
+	for rows.Next() {
+		adventures = append(adventures, Adventure{})
+
+		adventureToEdit := &adventures[len(adventures)-1]
+		if err = rows.Scan(&adventureToEdit.AthleteId, &adventureToEdit.StartLocation, &adventureToEdit.EndLocation, &adventureToEdit.CurrentLocationName, &adventureToEdit.CurrentDistance, &adventureToEdit.TotalDistance, &adventureToEdit.Completed); err != nil {
+			return nil, err
 		}
 	}
 
-	if !isExternalTx {
-		err = database.CommitOrRollbackSQLiteTransaction(tx)
-		if err != nil {
-			return err
-		}
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return adventures, nil
 }

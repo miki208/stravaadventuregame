@@ -9,14 +9,21 @@ import (
 )
 
 func CreateStravaWebhookSubscription(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
-	isAdmin, err := model.IsAthleteAdmin(session.UserId, app.SqlDb, nil)
+	athlete := model.NewAthlete()
+	found, err := athlete.Load(session.UserId, app.SqlDb, nil)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
 
-	if !isAdmin {
+	if !found {
+		http.Error(resp, "Athlete not found.", http.StatusInternalServerError)
+
+		return
+	}
+
+	if !athlete.IsAdmin() {
 		http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
 
 		return
@@ -53,14 +60,21 @@ func CreateStravaWebhookSubscription(resp http.ResponseWriter, req *http.Request
 }
 
 func DeleteStravaWebhookSubscription(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
-	isAdmin, err := model.IsAthleteAdmin(session.UserId, app.SqlDb, nil)
+	athlete := model.NewAthlete()
+	found, err := athlete.Load(session.UserId, app.SqlDb, nil)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
 
-	if !isAdmin {
+	if !found {
+		http.Error(resp, "Athlete not found.", http.StatusInternalServerError)
+
+		return
+	}
+
+	if !athlete.IsAdmin() {
 		http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
 
 		return

@@ -1,4 +1,4 @@
-package model
+package externalmodel
 
 type DirectionsSummary struct {
 	Distance float32 `json:"distance"`

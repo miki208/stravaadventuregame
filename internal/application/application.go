@@ -68,7 +68,8 @@ func MakeApp() *App {
 			conf.StravaConf.AuthorizationCallback,
 			conf.StravaConf.Scope,
 			conf.StravaConf.WebhookCallback,
-			conf.StravaConf.VerifyToken),
+			conf.StravaConf.VerifyToken,
+			conf.StravaConf.DeleteOldActivitiesAfterDays),
 		OrsSvc: openrouteservice.CreateService(conf.OrsConf.ApiKey),
 	}
 
