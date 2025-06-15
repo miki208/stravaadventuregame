@@ -93,6 +93,14 @@ func (athl *Athlete) IsAdmin() bool {
 	return athl.isAdmin > 0
 }
 
+func (athl *Athlete) SetIsAdmin(isAdmin bool) {
+	if isAdmin {
+		athl.isAdmin = 1
+	} else {
+		athl.isAdmin = 0
+	}
+}
+
 func AthleteExists(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 	temp := NewAthlete()
 

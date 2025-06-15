@@ -25,7 +25,7 @@ This relatively simple (for now) program pulls in activities from Strava — one
 ## What has to be done
 
 * ~~Strava bearer token refresh logic.~~
-* Strava webhook handling.
+* ~~Strava webhook handling.~~
 * Determining the current location based on total distance and the calculated route between two places, with reverse geolocation used to look up the location name.
 * Embedding calculated data into Strava activity descriptions.
 * Detecting completed adventures.

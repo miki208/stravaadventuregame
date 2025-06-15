@@ -5,6 +5,7 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/database"
+	"github.com/miki208/stravaadventuregame/internal/model"
 )
 
 func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *application.App) {
@@ -48,6 +49,21 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 		return
 	}
 	defer tx.Rollback()
+
+	// determine if the athlete already exists (is it updating or creating a new one?)
+	existingAthlete := model.NewAthlete()
+	existingFound, err := existingAthlete.Load(athlete.Id, app.SqlDb, tx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
+	}
+
+	if existingFound {
+		// this is to resolve a bug where admin status was lost during login
+
+		athlete.SetIsAdmin(existingAthlete.IsAdmin())
+	}
 
 	err = athlete.Save(app.SqlDb, tx)
 	if err != nil {
