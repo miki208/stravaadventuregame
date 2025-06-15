@@ -2,7 +2,6 @@ package externalmodel
 
 type Athlete struct {
 	Id        int64  `json:"id"`
-	Username  string `json:"username"`
 	FirstName string `json:"firstname"`
 	LastName  string `json:"lastname"`
 	City      string `json:"city"`

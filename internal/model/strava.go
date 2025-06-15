@@ -33,7 +33,7 @@ func (athl *Athlete) Load(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 		row = db.QueryRow(query, params...)
 	}
 
-	err = row.Scan(&athl.Id, &athl.Username, &athl.FirstName, &athl.LastName, &athl.City, &athl.Country, &athl.Sex, &athl.isAdmin)
+	err = row.Scan(&athl.Id, &athl.FirstName, &athl.LastName, &athl.City, &athl.Country, &athl.Sex, &athl.isAdmin)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
@@ -55,20 +55,20 @@ func (athl *Athlete) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if found {
-		query := "UPDATE Athlete SET username=?, first_name=?, last_name=?, city=?, country=?, sex=?, is_admin=? WHERE id=?"
+		query := "UPDATE Athlete SET first_name=?, last_name=?, city=?, country=?, sex=?, is_admin=? WHERE id=?"
 
 		if tx != nil {
-			_, err = tx.Exec(query, athl.Username, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
+			_, err = tx.Exec(query, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
 		} else {
-			_, err = db.Exec(query, athl.Username, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
+			_, err = db.Exec(query, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
 		}
 	} else {
-		query := "INSERT INTO Athlete VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
+		query := "INSERT INTO Athlete VALUES(?, ?, ?, ?, ?, ?, ?)"
 
 		if tx != nil {
-			_, err = tx.Exec(query, athl.Id, athl.Username, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin)
+			_, err = tx.Exec(query, athl.Id, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin)
 		} else {
-			_, err = db.Exec(query, athl.Id, athl.Username, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin)
+			_, err = db.Exec(query, athl.Id, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin)
 		}
 	}
 
