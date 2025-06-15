@@ -7,5 +7,5 @@ import (
 )
 
 func StravaWebhookCallback(resp http.ResponseWriter, req *http.Request, app *application.App) {
-	app.StravaSvc.StravaWebhookCallback(resp, req, app.SqlDb, nil, app.SessionMgr)
+	app.StravaSvc.StravaWebhookCallback(resp, req, app.SqlDb, app.SessionMgr)
 }

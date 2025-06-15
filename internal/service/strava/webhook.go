@@ -6,14 +6,15 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/miki208/stravaadventuregame/internal/database"
 	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 	"github.com/miki208/stravaadventuregame/internal/service/strava/externalmodel"
 )
 
-func (svc *Strava) StravaWebhookCallback(resp http.ResponseWriter, req *http.Request, db *sql.DB, tx *sql.Tx, sessionManager *helper.SessionManager) {
+func (svc *Strava) StravaWebhookCallback(resp http.ResponseWriter, req *http.Request, db *sql.DB, sessionManager *helper.SessionManager) {
 	if req.Method == http.MethodGet {
-		svc.handleWebhookForSubscriptionValidation(resp, req, db, tx)
+		svc.handleWebhookForSubscriptionValidation(resp, req, db)
 	} else if req.Method == http.MethodPost {
 		requestBody, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -31,16 +32,16 @@ func (svc *Strava) StravaWebhookCallback(resp http.ResponseWriter, req *http.Req
 		}
 
 		if webhookEvent.ObjectType == "athlete" {
-			svc.handleWebhookForAthlete(&webhookEvent, db, tx, sessionManager)
+			svc.handleWebhookForAthlete(&webhookEvent, db, sessionManager)
 		} else if webhookEvent.ObjectType == "activity" {
-			svc.handleWebhookForActivity(&webhookEvent, db, tx)
+			svc.handleWebhookForActivity(&webhookEvent, db)
 		}
 
 		resp.WriteHeader(http.StatusOK)
 	}
 }
 
-func (svc *Strava) handleWebhookForSubscriptionValidation(resp http.ResponseWriter, req *http.Request, db *sql.DB, tx *sql.Tx) {
+func (svc *Strava) handleWebhookForSubscriptionValidation(resp http.ResponseWriter, req *http.Request, db *sql.DB) {
 	query := req.URL.Query()
 
 	if !query.Has("hub.challenge") || !query.Has("hub.mode") || !query.Has("hub.verify_token") {
@@ -69,11 +70,11 @@ func (svc *Strava) handleWebhookForSubscriptionValidation(resp http.ResponseWrit
 	}
 }
 
-func (svc *Strava) handleWebhookForAthlete(webhookEvent *externalmodel.StravaWebhookEvent, db *sql.DB, tx *sql.Tx, sessionManager *helper.SessionManager) {
+func (svc *Strava) handleWebhookForAthlete(webhookEvent *externalmodel.StravaWebhookEvent, db *sql.DB, sessionManager *helper.SessionManager) {
 	authorizedUpdate, ok := webhookEvent.Updates["authorized"]
 	if ok && authorizedUpdate == "false" {
 		// atlete is revoking access, we're going to delete the athlete from the database
-		svc.Deauthorize(webhookEvent.ObjectId, false, db, tx)
+		svc.Deauthorize(webhookEvent.ObjectId, false, db, nil)
 
 		session := sessionManager.GetSessionByUserId(webhookEvent.ObjectId)
 		if session != nil {
@@ -82,11 +83,65 @@ func (svc *Strava) handleWebhookForAthlete(webhookEvent *externalmodel.StravaWeb
 	}
 }
 
-func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWebhookEvent, db *sql.DB, tx *sql.Tx) {
+func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWebhookEvent, db *sql.DB) {
 	// we need to be quick here, we're just going to queue the activity for processing
 
-	var internalStravaWebhookEvent model.StravaWebhookEvent
-	internalStravaWebhookEvent.FromExternalModel(webhookEvent)
+	// we have a special logic for delete and update events in case there is a pending activity in the database
+	if webhookEvent.AspectType == "delete" || webhookEvent.AspectType == "update" {
+		tx, err := db.Begin()
+		if err != nil {
+			return
+		}
 
-	internalStravaWebhookEvent.Save(db, tx)
+		defer tx.Rollback()
+
+		var webhookEventInDb model.StravaWebhookEvent
+		found, err := webhookEventInDb.Load(webhookEvent.ObjectId, db, tx)
+		if err != nil {
+			return
+		}
+
+		if found {
+			// new event = delete
+			// 	old event = create -> delete old
+			//	old event = update -> update old to delete
+			// new event = update
+			//	old event = create -> do nothing
+			// 	old event = update -> do nothing
+
+			if webhookEvent.AspectType == "delete" {
+				if webhookEventInDb.AspectType == "update" {
+					webhookEventInDb.AspectType = "delete"
+
+					err = webhookEventInDb.Save(db, tx)
+					if err != nil {
+						return
+					}
+				} else {
+					err = webhookEventInDb.Delete(db, tx)
+					if err != nil {
+						return
+					}
+				}
+			}
+		} else {
+			// new event = delete -> save
+			// new event = update -> save
+
+			var internalStravaWebhookEvent model.StravaWebhookEvent
+			internalStravaWebhookEvent.FromExternalModel(webhookEvent)
+
+			err = internalStravaWebhookEvent.Save(db, tx)
+			if err != nil {
+				return
+			}
+		}
+
+		database.CommitOrRollbackSQLiteTransaction(tx)
+	} else if webhookEvent.AspectType != "create" {
+		var internalStravaWebhookEvent model.StravaWebhookEvent
+		internalStravaWebhookEvent.FromExternalModel(webhookEvent)
+
+		internalStravaWebhookEvent.Save(db, nil)
+	}
 }
