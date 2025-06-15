@@ -29,6 +29,7 @@ This relatively simple (for now) program pulls in activities from Strava — one
 * Determining the current location based on total distance and the calculated route between two places, with reverse geolocation used to look up the location name.
 * Embedding calculated data into Strava activity descriptions.
 * Detecting completed adventures.
+* Logging.
 
 ## Plans for the future
 
@@ -36,3 +37,4 @@ This relatively simple (for now) program pulls in activities from Strava — one
 * Debug mode support: expose internal errors only in debug mode; otherwise, log them and return simplified, user-friendly messages.
 * Database abstraction: consider introducing an ORM instead of using bare database/sql, or build a custom solution to auto-generate schemas, methods, and handle migrations.
 * Map integration: display routes and current locations on an actual map instead of plain text.
+* Unit testing.

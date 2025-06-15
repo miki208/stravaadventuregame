@@ -138,7 +138,7 @@ func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWe
 		}
 
 		database.CommitOrRollbackSQLiteTransaction(tx)
-	} else if webhookEvent.AspectType != "create" {
+	} else if webhookEvent.AspectType == "create" {
 		var internalStravaWebhookEvent model.StravaWebhookEvent
 		internalStravaWebhookEvent.FromExternalModel(webhookEvent)
 
