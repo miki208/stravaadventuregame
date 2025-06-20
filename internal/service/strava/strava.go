@@ -357,7 +357,58 @@ func (svc *Strava) GetActivity(athleteId, activityId int64, db *sql.DB, tx *sql.
 	return &internalActivity, nil
 }
 
-//func (svc *Strava) UpdateActivity(athleteId, activityId int64, fieldsToUpdate map[string])
+func (svc *Strava) UpdateActivity(athleteId, activityId int64, fieldsToUpdate map[string]any, db *sql.DB, tx *sql.Tx) (*model.Activity, error) {
+	if len(fieldsToUpdate) == 0 {
+		return nil, &StravaError{statusCode: http.StatusBadRequest, err: errors.New("no fields to update")}
+	}
+
+	updateActivityBody, err := json.Marshal(fieldsToUpdate)
+	if err != nil {
+		return nil, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	req, err := http.NewRequest(http.MethodPut, svc.baseUrl+"/activities/"+strconv.FormatInt(activityId, 10), bytes.NewBuffer(updateActivityBody))
+	if err != nil {
+		return nil, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	credential, err := svc.GetCredentialsForAthlete(athleteId, db, tx)
+	if err != nil {
+		return nil, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	req.Header.Set("Authorization", "Bearer "+credential.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &StravaError{statusCode: resp.StatusCode, err: errors.New("failed to update activity on strava")}
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	var activity externalmodel.Activity
+	err = json.Unmarshal(respBody, &activity)
+	if err != nil {
+		return nil, &StravaError{statusCode: http.StatusInternalServerError, err: err}
+	}
+
+	var internalActivity model.Activity
+	internalActivity.FromExternalModel(&activity)
+
+	internalActivity.AthleteId = athleteId
+
+	return &internalActivity, nil
+}
 
 func SendCallbackValidationResponse(hubChallenge string, resp http.ResponseWriter) error {
 	challengeResponse := externalmodel.CallbackValidationResponse{HubChallenge: hubChallenge}

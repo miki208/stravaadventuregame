@@ -384,9 +384,9 @@ func (a *Activity) Save(db *sql.DB, tx *sql.Tx) error {
 		query := "INSERT INTO Activity VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
 
 		if tx != nil {
-			_, err = tx.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.Description, a.TotalElevationGain)
+			_, err = tx.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain, a.Description)
 		} else {
-			_, err = db.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.Description, a.TotalElevationGain)
+			_, err = db.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain, a.Description)
 		}
 	}
 

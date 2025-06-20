@@ -23,7 +23,7 @@ func StravaPendingActivityProcessor(app *application.App) {
 
 	processingTimeUnix := time.Now().Unix()
 	for _, ev := range evs {
-		if ev.EventTime+int64(app.StravaSvc.GetProcessWebhookEventsAfterSec()) > processingTimeUnix {
+		if ev.EventTime+int64(app.StravaSvc.GetProcessWebhookEventsAfterSec()) >= processingTimeUnix {
 			continue
 		}
 
@@ -153,6 +153,8 @@ func onActivityDeleted(app *application.App, activity *model.Activity) {
 		return
 	}
 
+	progressIsMade := false
+
 	var oldTotalDistance float32
 	if len(startedAdventure) > 0 && startedAdventure[0].StartDate < activity.StartDate {
 		oldTotalDistance = startedAdventure[0].CurrentDistance
@@ -164,6 +166,8 @@ func onActivityDeleted(app *application.App, activity *model.Activity) {
 		}
 
 		if startedAdventure[0].CurrentDistance != oldTotalDistance {
+			progressIsMade = true
+
 			err = onTotalDistanceUpdated(&startedAdventure[0], activity, oldTotalDistance, app, tx)
 			if err != nil {
 				return
@@ -175,8 +179,10 @@ func onActivityDeleted(app *application.App, activity *model.Activity) {
 		return
 	}
 
-	if err = onProgressCommited(&startedAdventure[0], activity, app); err != nil {
-		return
+	if progressIsMade {
+		if err = onProgressCommited(&startedAdventure[0], activity, app, "delete"); err != nil {
+			return
+		}
 	}
 }
 
@@ -197,6 +203,8 @@ func onActivityCreated(app *application.App, activity *model.Activity) {
 		return
 	}
 
+	progressIsMade := false
+
 	var oldTotalDistance float32
 	if len(startedAdventure) > 0 && startedAdventure[0].StartDate <= activity.StartDate {
 		oldTotalDistance = startedAdventure[0].CurrentDistance
@@ -205,6 +213,8 @@ func onActivityCreated(app *application.App, activity *model.Activity) {
 		startedAdventure[0].CurrentDistance += activity.Distance
 
 		if oldTotalDistance != startedAdventure[0].CurrentDistance {
+			progressIsMade = true
+
 			err = onTotalDistanceUpdated(&startedAdventure[0], activity, oldTotalDistance, app, tx)
 			if err != nil {
 				return
@@ -216,8 +226,10 @@ func onActivityCreated(app *application.App, activity *model.Activity) {
 		return
 	}
 
-	if err = onProgressCommited(&startedAdventure[0], activity, app); err != nil {
-		return
+	if progressIsMade {
+		if err = onProgressCommited(&startedAdventure[0], activity, app, "create"); err != nil {
+			return
+		}
 	}
 }
 
@@ -238,6 +250,8 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 		return
 	}
 
+	progressIsMade := false
+
 	var oldTotalDistance float32
 	if len(startedAdventure) > 0 {
 		oldTotalDistance = startedAdventure[0].CurrentDistance
@@ -257,6 +271,8 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 		}
 
 		if oldTotalDistance != startedAdventure[0].CurrentDistance {
+			progressIsMade = true
+
 			err = onTotalDistanceUpdated(&startedAdventure[0], newActivity, oldTotalDistance, app, tx)
 			if err != nil {
 				return
@@ -268,8 +284,10 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 		return
 	}
 
-	if err = onProgressCommited(&startedAdventure[0], newActivity, app); err != nil {
-		return
+	if progressIsMade {
+		if err = onProgressCommited(&startedAdventure[0], newActivity, app, "update"); err != nil {
+			return
+		}
 	}
 }
 
@@ -323,8 +341,55 @@ func onAdventureCompleted(adventure *model.Adventure, activity *model.Activity, 
 	return nil
 }
 
-func onProgressCommited(adventure *model.Adventure, activity *model.Activity, app *application.App) error {
-	// update Strava activity...
+func onProgressCommited(adventure *model.Adventure, activity *model.Activity, app *application.App, eventType string) error {
+	if eventType != "create" {
+		return nil
+	}
+
+	var locationStart, locationEnd model.Location
+	foundStart, err := locationStart.Load(adventure.StartLocation, app.SqlDb, nil)
+	if err != nil {
+		return err
+	}
+
+	foundEnd, err := locationEnd.Load(adventure.EndLocation, app.SqlDb, nil)
+	if err != nil {
+		return err
+	}
+
+	if !foundStart || !foundEnd {
+		return errors.New("start or end location not found")
+	}
+
+	var descriptionText string
+	if adventure.Completed == 1 {
+		descriptionText = fmt.Sprintf("Adventure completed! I have reached %s (started from %s, at %s (GMT)). Total distance: %.2f km.",
+			locationEnd.Name, locationStart.Name, time.Unix(int64(adventure.StartDate), 0).UTC().Format(time.DateTime), adventure.TotalDistance)
+	} else {
+		descriptionText = fmt.Sprintf("Adventure in progress! I am at %s (started from %s, at %s (GMT), going to %s). Distance traveled: %.2f/%.2f km.",
+			adventure.CurrentLocationName, locationStart.Name, time.Unix(int64(adventure.StartDate), 0).UTC().Format(time.DateTime), locationEnd.Name,
+			adventure.CurrentDistance, adventure.TotalDistance)
+	}
+
+	var fullDescription string
+	if activity.Description != "" {
+		fullDescription = activity.Description + "\n\n" + descriptionText
+	} else {
+		fullDescription = descriptionText
+	}
+
+	activity, err = app.StravaSvc.UpdateActivity(activity.AthleteId, activity.Id, map[string]any{
+		"description": fullDescription,
+	}, app.SqlDb, nil)
+
+	if err != nil {
+		return err
+	}
+
+	err = activity.Save(app.SqlDb, nil)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
