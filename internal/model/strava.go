@@ -319,7 +319,7 @@ type Activity struct {
 
 func (internalActivity *Activity) FromExternalModel(externalActivity *externalmodel.Activity) {
 	internalActivity.Id = externalActivity.Id
-	internalActivity.Distance = externalActivity.Distance
+	internalActivity.Distance = externalActivity.Distance / 1000 // transformation from meters to kilometers is done here
 	internalActivity.MovingTime = externalActivity.MovingTime
 	internalActivity.TotalElevationGain = externalActivity.TotalElevationGain
 	internalActivity.SportType = externalActivity.SportType

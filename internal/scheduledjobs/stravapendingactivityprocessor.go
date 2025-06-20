@@ -1,11 +1,15 @@
 package scheduledjobs
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/database"
+	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 	"github.com/miki208/stravaadventuregame/internal/service/strava"
 )
@@ -143,20 +147,30 @@ func onActivityDeleted(app *application.App, activity *model.Activity) {
 		return
 	}
 
+	var oldTotalDistance float32
 	if len(startedAdventure) > 0 && startedAdventure[0].StartDate < activity.StartDate {
+		oldTotalDistance = startedAdventure[0].CurrentDistance
+
 		if startedAdventure[0].CurrentDistance > activity.Distance {
 			startedAdventure[0].CurrentDistance -= activity.Distance
 		} else {
 			startedAdventure[0].CurrentDistance = 0
 		}
 
-		err = startedAdventure[0].Save(app.SqlDb, tx)
-		if err != nil {
-			return
+		if startedAdventure[0].CurrentDistance != oldTotalDistance {
+			err = onTotalDistanceUpdated(&startedAdventure[0], activity, oldTotalDistance, app, tx)
+			if err != nil {
+				return
+			}
 		}
 	}
 
 	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+		return
+	}
+
+	if err = onProgressCommited(&startedAdventure[0], activity, app); err != nil {
+		return
 	}
 }
 
@@ -177,23 +191,27 @@ func onActivityCreated(app *application.App, activity *model.Activity) {
 		return
 	}
 
+	var oldTotalDistance float32
 	if len(startedAdventure) > 0 && startedAdventure[0].StartDate <= activity.StartDate {
+		oldTotalDistance = startedAdventure[0].CurrentDistance
+
 		// if there is an adventure that started before this activity, we can add the activity's distance to it
 		startedAdventure[0].CurrentDistance += activity.Distance
 
-		if startedAdventure[0].CurrentDistance >= startedAdventure[0].TotalDistance {
-			startedAdventure[0].Completed = 1
-			startedAdventure[0].EndDate = activity.StartDate + activity.MovingTime
-		}
-
-		err = startedAdventure[0].Save(app.SqlDb, tx)
-		if err != nil {
-			return
+		if oldTotalDistance != startedAdventure[0].CurrentDistance {
+			err = onTotalDistanceUpdated(&startedAdventure[0], activity, oldTotalDistance, app, tx)
+			if err != nil {
+				return
+			}
 		}
 	}
 
 	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
-		// update strava activity description
+		return
+	}
+
+	if err = onProgressCommited(&startedAdventure[0], activity, app); err != nil {
+		return
 	}
 }
 
@@ -214,7 +232,10 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 		return
 	}
 
+	var oldTotalDistance float32
 	if len(startedAdventure) > 0 {
+		oldTotalDistance = startedAdventure[0].CurrentDistance
+
 		var distanceToAdd float32
 		if startedAdventure[0].StartDate <= oldActivity.StartDate && startedAdventure[0].StartDate > newActivity.StartDate {
 			distanceToAdd = -oldActivity.Distance
@@ -227,18 +248,77 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 		startedAdventure[0].CurrentDistance += distanceToAdd
 		if startedAdventure[0].CurrentDistance < 0 {
 			startedAdventure[0].CurrentDistance = 0
-		} else if startedAdventure[0].CurrentDistance >= startedAdventure[0].TotalDistance {
-			startedAdventure[0].Completed = 1
-			startedAdventure[0].EndDate = newActivity.StartDate + newActivity.MovingTime
 		}
 
-		err = startedAdventure[0].Save(app.SqlDb, tx)
-		if err != nil {
-			return
+		if oldTotalDistance != startedAdventure[0].CurrentDistance {
+			err = onTotalDistanceUpdated(&startedAdventure[0], newActivity, oldTotalDistance, app, tx)
+			if err != nil {
+				return
+			}
 		}
 	}
 
 	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
-		// update strava activity description
+		return
 	}
+
+	if err = onProgressCommited(&startedAdventure[0], newActivity, app); err != nil {
+		return
+	}
+}
+
+func onTotalDistanceUpdated(adventure *model.Adventure, activity *model.Activity, oldTotalDistance float32, app *application.App, tx *sql.Tx) error {
+	if adventure.CurrentDistance >= adventure.TotalDistance {
+		adventure.Completed = 1
+		adventure.CurrentDistance = adventure.TotalDistance
+
+		onAdventureCompleted(adventure, activity, app, tx)
+	} else {
+		courseDbName := fmt.Sprintf("%d-%d", min(adventure.StartLocation, adventure.EndLocation),
+			max(adventure.StartLocation, adventure.EndLocation))
+
+		var route *model.DirectionsRoute = model.NewDirectionsRoute()
+		err := app.FileDb.Read("course", courseDbName, route)
+		if err != nil {
+			return err
+		}
+
+		lon, lat, err := helper.GetPointFromPolylineAndDistance(route.Geometry, adventure.StartLocation > adventure.EndLocation, adventure.CurrentDistance*1000)
+		if err != nil {
+			return err
+		}
+
+		geocodeResults, err := app.OrsSvc.ReverseGeocode(lon, lat, 10, "country,region,locality,localadmin")
+		if err != nil {
+			return err
+		}
+
+		adventure.CurrentLocationName = helper.GetPreferedLocationName(geocodeResults)
+	}
+
+	return adventure.Save(app.SqlDb, tx)
+}
+
+func onAdventureCompleted(adventure *model.Adventure, activity *model.Activity, app *application.App, tx *sql.Tx) error {
+	adventure.EndDate = activity.StartDate + activity.MovingTime
+
+	var endLocation model.Location
+	found, err := endLocation.Load(adventure.EndLocation, app.SqlDb, tx)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		return errors.New("end location not found")
+	}
+
+	adventure.CurrentLocationName = endLocation.Name
+
+	return nil
+}
+
+func onProgressCommited(adventure *model.Adventure, activity *model.Activity, app *application.App) error {
+	// update Strava activity...
+
+	return nil
 }

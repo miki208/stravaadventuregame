@@ -8,3 +8,7 @@ type DirectionsRequest struct {
 type DirectionsResponse struct {
 	Routes []DirectionsRoute `json:"routes"`
 }
+
+type ReverseGeocodeResponse struct {
+	Features []ReverseGeocodeFeature `json:"features"`
+}
