@@ -298,26 +298,40 @@ func onTotalDistanceUpdated(adventure *model.Adventure, activity *model.Activity
 
 		onAdventureCompleted(adventure, activity, app, tx)
 	} else {
-		courseDbName := fmt.Sprintf("%d-%d", min(adventure.StartLocation, adventure.EndLocation),
-			max(adventure.StartLocation, adventure.EndLocation))
+		if adventure.CurrentDistance == 0 {
+			var startLocation model.Location
+			found, err := startLocation.Load(adventure.StartLocation, app.SqlDb, tx)
+			if err != nil {
+				return err
+			}
 
-		var route *model.DirectionsRoute = model.NewDirectionsRoute()
-		err := app.FileDb.Read("course", courseDbName, route)
-		if err != nil {
-			return err
+			if !found {
+				return errors.New("start location not found")
+			}
+
+			adventure.CurrentLocationName = startLocation.Name
+		} else {
+			courseDbName := fmt.Sprintf("%d-%d", min(adventure.StartLocation, adventure.EndLocation),
+				max(adventure.StartLocation, adventure.EndLocation))
+
+			var route *model.DirectionsRoute = model.NewDirectionsRoute()
+			err := app.FileDb.Read("course", courseDbName, route)
+			if err != nil {
+				return err
+			}
+
+			lon, lat, err := helper.GetPointFromPolylineAndDistance(route.Geometry, adventure.StartLocation > adventure.EndLocation, adventure.CurrentDistance*1000)
+			if err != nil {
+				return err
+			}
+
+			geocodeResults, err := app.OrsSvc.ReverseGeocode(lon, lat, 10, "country,region,locality,localadmin")
+			if err != nil {
+				return err
+			}
+
+			adventure.CurrentLocationName = helper.GetPreferedLocationName(geocodeResults)
 		}
-
-		lon, lat, err := helper.GetPointFromPolylineAndDistance(route.Geometry, adventure.StartLocation > adventure.EndLocation, adventure.CurrentDistance*1000)
-		if err != nil {
-			return err
-		}
-
-		geocodeResults, err := app.OrsSvc.ReverseGeocode(lon, lat, 10, "country,region,locality,localadmin")
-		if err != nil {
-			return err
-		}
-
-		adventure.CurrentLocationName = helper.GetPreferedLocationName(geocodeResults)
 	}
 
 	return adventure.Save(app.SqlDb, tx)
