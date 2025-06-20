@@ -189,12 +189,14 @@ type StravaWebhookEvent struct {
 	ObjectId   int64
 	OwnerId    int64
 	AspectType string
+	EventTime  int64
 }
 
 func (stravaWebhookEvent *StravaWebhookEvent) FromExternalModel(externalStravaWebhookEvent *externalmodel.StravaWebhookEvent) {
 	stravaWebhookEvent.ObjectId = externalStravaWebhookEvent.ObjectId
 	stravaWebhookEvent.OwnerId = externalStravaWebhookEvent.OwnerId
 	stravaWebhookEvent.AspectType = externalStravaWebhookEvent.AspectType
+	stravaWebhookEvent.EventTime = externalStravaWebhookEvent.EventTime
 }
 
 func (ev *StravaWebhookEvent) Load(activityId int64, db *sql.DB, tx *sql.Tx) (bool, error) {
@@ -209,7 +211,7 @@ func (ev *StravaWebhookEvent) Load(activityId int64, db *sql.DB, tx *sql.Tx) (bo
 		row = db.QueryRow(query, params...)
 	}
 
-	err = row.Scan(&ev.ObjectId, &ev.OwnerId, &ev.AspectType)
+	err = row.Scan(&ev.ObjectId, &ev.OwnerId, &ev.AspectType, &ev.EventTime)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
@@ -231,20 +233,20 @@ func (ev *StravaWebhookEvent) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if found {
-		query := "UPDATE PendingActivity SET aspect_type=? WHERE id=?"
+		query := "UPDATE PendingActivity SET aspect_type=?, event_time=? WHERE id=?"
 
 		if tx != nil {
-			_, err = tx.Exec(query, ev.AspectType, ev.ObjectId)
+			_, err = tx.Exec(query, ev.AspectType, ev.EventTime, ev.ObjectId)
 		} else {
-			_, err = db.Exec(query, ev.AspectType, ev.ObjectId)
+			_, err = db.Exec(query, ev.AspectType, ev.EventTime, ev.ObjectId)
 		}
 	} else {
-		query := "INSERT INTO PendingActivity VALUES(?, ?, ?)"
+		query := "INSERT INTO PendingActivity VALUES(?, ?, ?, ?)"
 
 		if tx != nil {
-			_, err = tx.Exec(query, ev.ObjectId, ev.OwnerId, ev.AspectType)
+			_, err = tx.Exec(query, ev.ObjectId, ev.OwnerId, ev.AspectType, ev.EventTime)
 		} else {
-			_, err = db.Exec(query, ev.ObjectId, ev.OwnerId, ev.AspectType)
+			_, err = db.Exec(query, ev.ObjectId, ev.OwnerId, ev.AspectType, ev.EventTime)
 		}
 	}
 
@@ -294,7 +296,7 @@ func AllStravaWebhookEvents(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]St
 		events = append(events, StravaWebhookEvent{})
 
 		eventToEdit := &events[len(events)-1]
-		if err = rows.Scan(&eventToEdit.ObjectId, &eventToEdit.OwnerId, &eventToEdit.AspectType); err != nil {
+		if err = rows.Scan(&eventToEdit.ObjectId, &eventToEdit.OwnerId, &eventToEdit.AspectType, &eventToEdit.EventTime); err != nil {
 			return nil, err
 		}
 	}

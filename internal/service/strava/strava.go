@@ -26,9 +26,10 @@ type Strava struct {
 	webhookCallback              string
 	verifyToken                  string // TODO: this should be a random string in future
 	deleteOldActivitiesAfterDays int
+	processWebhookEventsAfterSec int
 }
 
-func CreateService(clientId int, clientSecret, authorizationCallback, scope, webhookCallback, verifyToken string, deleteOldActivitiesAfterDays int) *Strava {
+func CreateService(clientId int, clientSecret, authorizationCallback, scope, webhookCallback, verifyToken string, deleteOldActivitiesAfterDays, processWebhookEventsAfterSec int) *Strava {
 	return &Strava{
 		clientId:                     clientId,
 		clientSecret:                 clientSecret,
@@ -38,6 +39,7 @@ func CreateService(clientId int, clientSecret, authorizationCallback, scope, web
 		webhookCallback:              webhookCallback,
 		verifyToken:                  verifyToken,
 		deleteOldActivitiesAfterDays: deleteOldActivitiesAfterDays,
+		processWebhookEventsAfterSec: processWebhookEventsAfterSec,
 	}
 }
 
@@ -63,6 +65,10 @@ func (svc *Strava) GetVerifyToken() string {
 
 func (svc *Strava) GetDeleteOldActivitiesAfterDays() int {
 	return svc.deleteOldActivitiesAfterDays
+}
+
+func (svc *Strava) GetProcessWebhookEventsAfterSec() int {
+	return svc.processWebhookEventsAfterSec
 }
 
 func (svc *Strava) ExchangeToken(authorizationCode string) (*model.Athlete, *model.StravaCredential, error) {

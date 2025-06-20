@@ -13,6 +13,7 @@ type stravaConfig struct {
 	Scope                        string `json:"scope"`
 	VerifyToken                  string `json:"verify_token"`
 	DeleteOldActivitiesAfterDays int    `json:"delete_old_activities_after_days"`
+	ProcessWebhookEventsAfterSec int    `json:"process_webhook_events_after_sec"`
 }
 
 type openRouteServiceConfig struct {
@@ -70,7 +71,8 @@ func (conf *config) validate() bool {
 	}
 
 	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" ||
-		conf.StravaConf.Scope == "" || conf.StravaConf.WebhookCallback == "" || conf.StravaConf.VerifyToken == "" || conf.StravaConf.DeleteOldActivitiesAfterDays < 1 {
+		conf.StravaConf.Scope == "" || conf.StravaConf.WebhookCallback == "" || conf.StravaConf.VerifyToken == "" || conf.StravaConf.DeleteOldActivitiesAfterDays < 1 ||
+		conf.StravaConf.ProcessWebhookEventsAfterSec < conf.ScheduledJobIntervalSec {
 		return false
 	}
 

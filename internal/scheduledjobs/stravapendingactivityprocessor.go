@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/database"
@@ -20,7 +21,12 @@ func StravaPendingActivityProcessor(app *application.App) {
 		return
 	}
 
+	processingTimeUnix := time.Now().Unix()
 	for _, ev := range evs {
+		if ev.EventTime+int64(app.StravaSvc.GetProcessWebhookEventsAfterSec()) > processingTimeUnix {
+			continue
+		}
+
 		if !processOneActivity(app, &ev) {
 			break // if we got a rate limit error, we stop processing
 		}
