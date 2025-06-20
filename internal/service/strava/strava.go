@@ -351,6 +351,8 @@ func (svc *Strava) GetActivity(athleteId, activityId int64, db *sql.DB, tx *sql.
 	return &internalActivity, nil
 }
 
+//func (svc *Strava) UpdateActivity(athleteId, activityId int64, fieldsToUpdate map[string])
+
 func SendCallbackValidationResponse(hubChallenge string, resp http.ResponseWriter) error {
 	challengeResponse := externalmodel.CallbackValidationResponse{HubChallenge: hubChallenge}
 	challengeResponseJson, err := json.Marshal(&challengeResponse)

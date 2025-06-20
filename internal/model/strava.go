@@ -313,6 +313,7 @@ type Activity struct {
 	TotalElevationGain float32
 	SportType          string
 	StartDate          int
+	Description        string
 
 	AthleteId int64
 }
@@ -330,12 +331,14 @@ func (internalActivity *Activity) FromExternalModel(externalActivity *externalmo
 	} else {
 		internalActivity.StartDate = int(parsedTime.Unix())
 	}
+
+	internalActivity.Description = externalActivity.Description
 }
 
 func (a *Activity) Load(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 	var err error
 
-	query, params := PrepareQuery("SELECT id, athlete_id, type, distance, start_date, moving_time, elevation_gain FROM Activity", map[string]any{
+	query, params := PrepareQuery("SELECT id, athlete_id, type, distance, start_date, moving_time, elevation_gain, description FROM Activity", map[string]any{
 		"id": id,
 	})
 
@@ -346,7 +349,7 @@ func (a *Activity) Load(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 		row = db.QueryRow(query, params...)
 	}
 
-	err = row.Scan(&a.Id, &a.AthleteId, &a.SportType, &a.Distance, &a.StartDate, &a.MovingTime, &a.TotalElevationGain)
+	err = row.Scan(&a.Id, &a.AthleteId, &a.SportType, &a.Distance, &a.StartDate, &a.MovingTime, &a.TotalElevationGain, &a.Description)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
@@ -368,20 +371,20 @@ func (a *Activity) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if found {
-		query := "UPDATE Activity SET type=?, distance=?, start_date=?, moving_time=?, elevation_gain=? WHERE id=?"
+		query := "UPDATE Activity SET type=?, distance=?, start_date=?, moving_time=?, elevation_gain=?, description=? WHERE id=?"
 
 		if tx != nil {
-			_, err = tx.Exec(query, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain, a.Id)
+			_, err = tx.Exec(query, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain, a.Description, a.Id)
 		} else {
-			_, err = db.Exec(query, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain, a.Id)
+			_, err = db.Exec(query, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain, a.Description, a.Id)
 		}
 	} else {
-		query := "INSERT INTO Activity VALUES(?, ?, ?, ?, ?, ?, ?)"
+		query := "INSERT INTO Activity VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
 
 		if tx != nil {
-			_, err = tx.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain)
+			_, err = tx.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.Description, a.TotalElevationGain)
 		} else {
-			_, err = db.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.TotalElevationGain)
+			_, err = db.Exec(query, a.Id, a.AthleteId, a.SportType, a.Distance, a.StartDate, a.MovingTime, a.Description, a.TotalElevationGain)
 		}
 	}
 
@@ -414,7 +417,7 @@ func AllActivities(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Activity, e
 	var err error
 
 	var rows *sql.Rows
-	query, params := PrepareQuery("SELECT id, athlete_id, type, distance, start_date, moving_time, elevation_gain FROM Activity", filter)
+	query, params := PrepareQuery("SELECT id, athlete_id, type, distance, start_date, moving_time, elevation_gain, description FROM Activity", filter)
 	if tx != nil {
 		rows, err = tx.Query(query, params...)
 	} else {
@@ -432,7 +435,7 @@ func AllActivities(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Activity, e
 
 		activityToEdit := &activities[len(activities)-1]
 		if err = rows.Scan(&activityToEdit.Id, &activityToEdit.AthleteId, &activityToEdit.SportType, &activityToEdit.Distance,
-			&activityToEdit.StartDate, &activityToEdit.MovingTime, &activityToEdit.TotalElevationGain); err != nil {
+			&activityToEdit.StartDate, &activityToEdit.MovingTime, &activityToEdit.TotalElevationGain, &activityToEdit.Description); err != nil {
 			return nil, err
 		}
 	}
