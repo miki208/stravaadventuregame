@@ -36,10 +36,10 @@ func (app *App) GetFullWebhookCallbackUrl() string {
 	return "https://" + app.Hostname + app.StravaSvc.GetWebhookCallback()
 }
 
-func MakeApp() *App {
+func MakeApp(configFileName string) *App {
 	var conf config
 
-	err := conf.loadFromFile("config.ini")
+	err := conf.loadFromFile(configFileName)
 	if err != nil {
 		panic(err)
 	}

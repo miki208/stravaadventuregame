@@ -36,12 +36,12 @@ type config struct {
 func (conf *config) loadFromFile(fileName string) error {
 	confContent, err := os.ReadFile(fileName)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	err = json.Unmarshal(confContent, &conf)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return nil

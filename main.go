@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
@@ -11,7 +12,10 @@ import (
 )
 
 func main() {
-	app := application.MakeApp()
+	configFileName := flag.String("config", "config.ini", "Path to the configuration file")
+	flag.Parse()
+
+	app := application.MakeApp(*configFileName)
 
 	for _, job := range scheduledjobs.GetScheduledJobs() {
 		app.CronSvc.AddJob(job)
