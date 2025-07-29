@@ -2,6 +2,7 @@ package helper
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -71,6 +72,8 @@ func (manager *SessionManager) DestroySession(session Session) {
 
 	delete(manager.userIdToSessionId, session.UserId)
 	delete(manager.sessionIdToSession, sessionId)
+
+	slog.Debug("Session destroyed.", "userId", session.UserId, "sessionId", sessionId)
 }
 
 func (manager *SessionManager) CreateSession(userId int64) Session {
@@ -83,6 +86,8 @@ func (manager *SessionManager) CreateSession(userId int64) Session {
 
 	manager.userIdToSessionId[userId] = sessionCookie.Value
 	manager.sessionIdToSession[sessionCookie.Value] = Session{UserId: userId, SessionCookie: sessionCookie}
+
+	slog.Debug("Session created.", "userId", userId, "sessionId", sessionCookie.Value)
 
 	return manager.sessionIdToSession[sessionCookie.Value]
 }

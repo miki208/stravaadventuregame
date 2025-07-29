@@ -5,48 +5,45 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/database"
+	"github.com/miki208/stravaadventuregame/internal/handler"
 	"github.com/miki208/stravaadventuregame/internal/model"
 )
 
-func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *application.App) {
+func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *application.App) error {
 	query := req.URL.Query()
 
 	if query.Has("error") {
 		http.Redirect(w, req, "/?error="+query.Get("error"), http.StatusFound)
 
-		return
+		return nil
 	}
 
 	if !query.Has("code") {
 		http.Redirect(w, req, "/?error=code_missing", http.StatusFound)
 
-		return
+		return nil
 	}
 
 	if !query.Has("scope") {
 		http.Redirect(w, req, "/?error=scope_missing", http.StatusFound)
 
-		return
+		return nil
 	}
 
 	if !app.StravaSvc.ValidateScope(query.Get("scope")) {
 		http.Redirect(w, req, "/?error=invalid_scope", http.StatusFound)
 
-		return
+		return nil
 	}
 
 	athlete, credentials, err := app.StravaSvc.ExchangeToken(query.Get("code"))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusFailedDependency)
-
-		return
+		return handler.NewHandlerError(http.StatusFailedDependency, err)
 	}
 
 	tx, err := app.SqlDb.Begin()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 	defer tx.Rollback()
 
@@ -54,9 +51,7 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 	existingAthlete := model.NewAthlete()
 	existingFound, err := existingAthlete.Load(athlete.Id, app.SqlDb, tx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	if existingFound {
@@ -67,27 +62,23 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 
 	err = athlete.Save(app.SqlDb, tx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	err = credentials.Save(app.SqlDb, tx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	err = database.CommitOrRollbackSQLiteTransaction(tx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	session := app.SessionMgr.CreateSession(athlete.Id)
 	http.SetCookie(w, &session.SessionCookie)
 
 	http.Redirect(w, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+
+	return nil
 }

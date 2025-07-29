@@ -5,18 +5,17 @@ import (
 	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
+	"github.com/miki208/stravaadventuregame/internal/handler"
 	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 )
 
-func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
+func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
 	athlete := model.NewAthlete()
 
 	exists, err := athlete.Load(session.UserId, app.SqlDb, nil)
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	if !exists {
@@ -24,14 +23,12 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 
 		http.Redirect(resp, req, "/?error=user_not_found", http.StatusFound)
 
-		return
+		return nil
 	}
 
 	availableLocations, err := model.AllLocations(app.SqlDb, nil, nil)
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	type AdventureExtended struct {
@@ -68,17 +65,13 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 
 	startedAdventures, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": athlete.Id, "completed": 0})
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	for _, adv := range startedAdventures {
 		adventureExtended, err := adventureToAdventureExtended(&adv)
 		if err != nil {
-			http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-			return
+			return handler.NewHandlerError(http.StatusInternalServerError, err)
 		}
 
 		startedAdventuresExtended = append(startedAdventuresExtended, adventureExtended)
@@ -88,17 +81,13 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 
 	completedAdventures, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": athlete.Id, "completed": 1})
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	for _, adv := range completedAdventures {
 		adventureExtended, err := adventureToAdventureExtended(&adv)
 		if err != nil {
-			http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-			return
+			return handler.NewHandlerError(http.StatusInternalServerError, err)
 		}
 
 		completedAdventuresExtended = append(completedAdventuresExtended, adventureExtended)
@@ -116,8 +105,8 @@ func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, 
 		AvailableLocations:  availableLocations,
 	})
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
+
+	return nil
 }

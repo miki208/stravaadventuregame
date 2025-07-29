@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"slices"
 	"time"
@@ -16,8 +17,12 @@ import (
 )
 
 func StravaPendingActivityProcessor(app *application.App) {
+	slog.Info("StravaPendingActivityProcessor > StravaPendingActivityProcessor started.")
+
 	evs, err := model.AllStravaWebhookEvents(app.SqlDb, nil, nil)
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > Failed to load pending Strava webhook events.", "error", err)
+
 		return
 	}
 
@@ -27,10 +32,14 @@ func StravaPendingActivityProcessor(app *application.App) {
 			continue
 		}
 
+		slog.Info("StravaPendingActivityProcessor > Processing webhook event.", "activity_id", ev.ObjectId, "event_time", ev.EventTime, "aspect_type", ev.AspectType)
+
 		if !processOneActivity(app, &ev) {
 			break // if we got a rate limit error, we stop processing
 		}
 	}
+
+	slog.Info("StravaPendingActivityProcessor > StravaPendingActivityProcessor finished.")
 }
 
 type ActivityProcessingResult int
@@ -45,6 +54,8 @@ const (
 func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool {
 	tx, err := app.SqlDb.Begin()
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > Failed to begin main transaction.", "error", err)
+
 		return true
 	}
 
@@ -54,6 +65,8 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 
 	// in all cases we need this event to be deleted from the database
 	if err = ev.Delete(app.SqlDb, tx); err != nil {
+		slog.Error("StravaPendingActivityProcessor > Failed to delete webhook event.", "activity_id", ev.ObjectId, "error", err)
+
 		return true
 	}
 
@@ -62,6 +75,8 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 	athlete := model.NewAthlete()
 	athleteExists, err = athlete.Load(ev.OwnerId, app.SqlDb, tx)
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > Failed to load athlete.", "athlete_id", ev.OwnerId, "error", err)
+
 		return true
 	}
 
@@ -72,6 +87,8 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 		var foundOld bool
 		foundOld, err = existingActivity.Load(ev.ObjectId, app.SqlDb, tx)
 		if err != nil {
+			slog.Error("StravaPendingActivityProcessor > Failed to load existing activity.", "activity_id", ev.ObjectId, "error", err)
+
 			return true
 		}
 
@@ -83,6 +100,8 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 
 				err = existingActivity.Delete(app.SqlDb, tx)
 				if err != nil {
+					slog.Error("StravaPendingActivityProcessor > Failed to delete activity.", "activity_id", existingActivity.Id, "error", err)
+
 					return true
 				}
 			}
@@ -92,8 +111,12 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 			if err != nil {
 				stravaErr, ok := err.(*strava.StravaError)
 				if ok && stravaErr.StatusCode() == http.StatusTooManyRequests {
+					slog.Error("StravaPendingActivityProcessor > Rate limit error encountered, stopping processing.", "error", stravaErr)
+
 					return false
 				}
+
+				slog.Error("StravaPendingActivityProcessor > Failed to fetch activity from Strava.", "activity_id", ev.ObjectId, "error", err)
 
 				return true
 			}
@@ -116,6 +139,8 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 			}
 
 			if err != nil {
+				slog.Error("StravaPendingActivityProcessor > Failed to process activity.", "processing_result", processingResult, "activity_id", newActivity.Id, "aspect_type", ev.AspectType, "error", err)
+
 				return true
 			}
 		}
@@ -123,14 +148,17 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 
 	err = database.CommitOrRollbackSQLiteTransaction(tx)
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > Failed to commit transaction.", "error", err)
+
 		return true
 	}
 
-	if processingResult == ActivityDeleted {
+	switch processingResult {
+	case ActivityDeleted:
 		onActivityDeleted(app, &existingActivity)
-	} else if processingResult == ActivityCreated {
+	case ActivityCreated:
 		onActivityCreated(app, newActivity)
-	} else if processingResult == ActivityUpdated {
+	case ActivityUpdated:
 		onActivityUpdated(app, &existingActivity, newActivity)
 	}
 
@@ -138,8 +166,12 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 }
 
 func onActivityDeleted(app *application.App, activity *model.Activity) {
+	slog.Info("StravaPendingActivityProcessor > Activity deleted.", "activity_id", activity)
+
 	tx, err := app.SqlDb.Begin()
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityDeleted) Failed to begin transaction.", "activity_id", activity.Id, "error", err)
+
 		return
 	}
 
@@ -150,6 +182,8 @@ func onActivityDeleted(app *application.App, activity *model.Activity) {
 		"completed":  0,
 	})
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityDeleted) Failed to load started adventures.", "athlete_id", activity.AthleteId, "error", err)
+
 		return
 	}
 
@@ -170,25 +204,35 @@ func onActivityDeleted(app *application.App, activity *model.Activity) {
 
 			err = onTotalDistanceUpdated(&startedAdventure[0], activity, oldTotalDistance, app, tx)
 			if err != nil {
+				slog.Error("StravaPendingActivityProcessor > (onActivityDeleted) Failed to update state on total distance updated.", "error", err)
+
 				return
 			}
 		}
 	}
 
 	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityDeleted) Failed to commit transaction with updated progress.", "error", err)
+
 		return
 	}
 
 	if progressIsMade {
 		if err = onProgressCommited(&startedAdventure[0], activity, app, "delete"); err != nil {
+			slog.Error("StravaPendingActivityProcessor > (onActivityDeleted) Error occurred on trigger for commited progress.", "error", err)
+
 			return
 		}
 	}
 }
 
 func onActivityCreated(app *application.App, activity *model.Activity) {
+	slog.Info("StravaPendingActivityProcessor > Activity created.", "activity_id", activity.Id)
+
 	tx, err := app.SqlDb.Begin()
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityCreated) Failed to begin transaction.", "activity_id", activity.Id, "error", err)
+
 		return
 	}
 
@@ -200,6 +244,8 @@ func onActivityCreated(app *application.App, activity *model.Activity) {
 		"completed":  0,
 	})
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityCreated) Failed to load started adventures.", "athlete_id", activity.AthleteId, "error", err)
+
 		return
 	}
 
@@ -217,25 +263,35 @@ func onActivityCreated(app *application.App, activity *model.Activity) {
 
 			err = onTotalDistanceUpdated(&startedAdventure[0], activity, oldTotalDistance, app, tx)
 			if err != nil {
+				slog.Error("StravaPendingActivityProcessor > (onActivityCreated) Failed to update state on total distance updated.", "error", err)
+
 				return
 			}
 		}
 	}
 
 	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityCreated) Failed to commit transaction with updated progress.", "error", err)
+
 		return
 	}
 
 	if progressIsMade {
 		if err = onProgressCommited(&startedAdventure[0], activity, app, "create"); err != nil {
+			slog.Error("StravaPendingActivityProcessor > (onActivityCreated) Error occurred on trigger for commited progress.", "error", err)
+
 			return
 		}
 	}
 }
 
 func onActivityUpdated(app *application.App, oldActivity *model.Activity, newActivity *model.Activity) {
+	slog.Info("StravaPendingActivityProcessor > Activity updated.", "activity_id", newActivity.Id)
+
 	tx, err := app.SqlDb.Begin()
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityUpdated) Failed to begin transaction.", "activity_id", newActivity.Id, "error", err)
+
 		return
 	}
 
@@ -247,6 +303,8 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 		"completed":  0,
 	})
 	if err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityUpdated) Failed to load started adventures.", "athlete_id", newActivity.AthleteId, "error", err)
+
 		return
 	}
 
@@ -275,17 +333,23 @@ func onActivityUpdated(app *application.App, oldActivity *model.Activity, newAct
 
 			err = onTotalDistanceUpdated(&startedAdventure[0], newActivity, oldTotalDistance, app, tx)
 			if err != nil {
+				slog.Error("StravaPendingActivityProcessor > (onActivityUpdated) Failed to update state on total distance updated.", "error", err)
+
 				return
 			}
 		}
 	}
 
 	if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+		slog.Error("StravaPendingActivityProcessor > (onActivityUpdated) Failed to commit transaction with updated progress.", "error", err)
+
 		return
 	}
 
 	if progressIsMade {
 		if err = onProgressCommited(&startedAdventure[0], newActivity, app, "update"); err != nil {
+			slog.Error("StravaPendingActivityProcessor > (onActivityUpdated) Error occurred on trigger for commited progress.", "error", err)
+
 			return
 		}
 	}

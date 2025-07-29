@@ -3,7 +3,8 @@
     "default_page_logged_in": "/welcome",
     "default_page_logged_out": "/",
     "admin_panel_page": "/admin-panel",
-    "path_to_templates": "/templates",
+    "path_to_templates": "templates/",
+    "path_to_cert_cache": "certs/",
     "sqlite_db_path": "data/app.db",
     "file_db_path": "data/",
     "strava_config": {

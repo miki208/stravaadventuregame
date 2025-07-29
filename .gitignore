@@ -1,4 +1,7 @@
 *.exe
 *.ini
+*.log
 /data
+/certs
 /.vscode
+stravaadventuregame

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/miki208/stravaadventuregame/internal/database"
@@ -13,12 +14,15 @@ import (
 )
 
 func (svc *Strava) StravaWebhookCallback(resp http.ResponseWriter, req *http.Request, db *sql.DB, sessionManager *helper.SessionManager) {
-	if req.Method == http.MethodGet {
+	switch req.Method {
+	case http.MethodGet:
 		svc.handleWebhookForSubscriptionValidation(resp, req, db)
-	} else if req.Method == http.MethodPost {
+	case http.MethodPost:
 		requestBody, err := io.ReadAll(req.Body)
 		if err != nil {
-			http.Error(resp, "Failed to read request body", http.StatusInternalServerError)
+			slog.Error("strava_webhook > Failed to read request body.", "error", err)
+
+			resp.WriteHeader(http.StatusInternalServerError)
 
 			return
 		}
@@ -26,14 +30,17 @@ func (svc *Strava) StravaWebhookCallback(resp http.ResponseWriter, req *http.Req
 		var webhookEvent externalmodel.StravaWebhookEvent
 		err = json.Unmarshal(requestBody, &webhookEvent)
 		if err != nil {
-			http.Error(resp, "Failed to unmarshal webhook event", http.StatusInternalServerError)
+			slog.Error("strava_webhook > Failed to unmarshal webhook event.", "error", err)
+
+			resp.WriteHeader(http.StatusInternalServerError)
 
 			return
 		}
 
-		if webhookEvent.ObjectType == "athlete" {
+		switch webhookEvent.ObjectType {
+		case "athlete":
 			svc.handleWebhookForAthlete(&webhookEvent, db, sessionManager)
-		} else if webhookEvent.ObjectType == "activity" {
+		case "activity":
 			svc.handleWebhookForActivity(&webhookEvent, db)
 		}
 
@@ -45,41 +52,57 @@ func (svc *Strava) handleWebhookForSubscriptionValidation(resp http.ResponseWrit
 	query := req.URL.Query()
 
 	if !query.Has("hub.challenge") || !query.Has("hub.mode") || !query.Has("hub.verify_token") {
-		http.Error(resp, "Missing required query parameters", http.StatusBadRequest)
+		slog.Error("strava_webhook > Missing required query parameters for Strava webhook validation")
+
+		resp.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
 	if query.Get("hub.mode") != "subscribe" {
-		http.Error(resp, "Invalid hub.mode", http.StatusBadRequest)
+		slog.Error("strava_webhook > Invalid hub.mode for Strava webhook validation", "mode", query.Get("hub.mode"))
+
+		resp.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
 	if query.Get("hub.verify_token") != svc.GetVerifyToken() {
-		http.Error(resp, "Invalid hub.verify_token", http.StatusBadRequest)
+		slog.Error("strava_webhook > Invalid hub.verify_token for Strava webhook validation", "token", query.Get("hub.verify_token"))
+
+		resp.WriteHeader(http.StatusBadRequest)
 
 		return
 	}
 
 	err := SendCallbackValidationResponse(query.Get("hub.challenge"), resp)
 	if err != nil {
-		http.Error(resp, "Failed to send callback validation response", http.StatusInternalServerError)
+		slog.Error("strava_webhook > Failed to send callback validation response.", "error", err)
+
+		resp.WriteHeader(http.StatusInternalServerError)
 
 		return
 	}
+
+	resp.WriteHeader(http.StatusOK)
 }
 
 func (svc *Strava) handleWebhookForAthlete(webhookEvent *externalmodel.StravaWebhookEvent, db *sql.DB, sessionManager *helper.SessionManager) {
 	authorizedUpdate, ok := webhookEvent.Updates["authorized"]
 	if ok && authorizedUpdate == "false" {
 		// atlete is revoking access, we're going to delete the athlete from the database
-		svc.Deauthorize(webhookEvent.ObjectId, false, db, nil)
+		if err := svc.Deauthorize(webhookEvent.ObjectId, false, db, nil); err != nil {
+			slog.Error("strava_webhook > Failed to deauthorize athlete.", "error", err, "athlete_id", webhookEvent.ObjectId)
+
+			return
+		}
 
 		session := sessionManager.GetSessionByUserId(webhookEvent.ObjectId)
 		if session != nil {
 			sessionManager.DestroySession(*session)
 		}
+
+		slog.Info("strava_webhook > Athlete deauthorized.", "athlete_id", webhookEvent.ObjectId)
 	}
 }
 
@@ -87,9 +110,12 @@ func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWe
 	// we need to be quick here, we're just going to queue the activity for processing
 
 	// we have a special logic for delete and update events in case there is a pending activity in the database
-	if webhookEvent.AspectType == "delete" || webhookEvent.AspectType == "update" {
+	switch webhookEvent.AspectType {
+	case "delete", "update":
 		tx, err := db.Begin()
 		if err != nil {
+			slog.Error("strava_webhook > Failed to begin transaction for webhook event.", "error", err)
+
 			return
 		}
 
@@ -98,6 +124,8 @@ func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWe
 		var webhookEventInDb model.StravaWebhookEvent
 		found, err := webhookEventInDb.Load(webhookEvent.ObjectId, db, tx)
 		if err != nil {
+			slog.Error("strava_webhook > Failed to load webhook event from database.", "error", err, "event_id", webhookEvent.ObjectId)
+
 			return
 		}
 
@@ -115,11 +143,15 @@ func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWe
 
 					err = webhookEventInDb.Save(db, tx)
 					if err != nil {
+						slog.Error("strava_webhook > Failed to update webhook event to delete.", "error", err, "event_id", webhookEvent.ObjectId)
+
 						return
 					}
 				} else {
 					err = webhookEventInDb.Delete(db, tx)
 					if err != nil {
+						slog.Error("strava_webhook > Failed to delete webhook event.", "error", err, "event_id", webhookEvent.ObjectId)
+
 						return
 					}
 				}
@@ -133,15 +165,25 @@ func (svc *Strava) handleWebhookForActivity(webhookEvent *externalmodel.StravaWe
 
 			err = internalStravaWebhookEvent.Save(db, tx)
 			if err != nil {
+				slog.Error("strava_webhook > Failed to save webhook event.", "error", err, "event_id", webhookEvent.ObjectId)
+
 				return
 			}
 		}
 
-		database.CommitOrRollbackSQLiteTransaction(tx)
-	} else if webhookEvent.AspectType == "create" {
+		if err = database.CommitOrRollbackSQLiteTransaction(tx); err != nil {
+			slog.Error("strava_webhook > Failed to commit transaction for webhook event.", "error", err, "event_id", webhookEvent.ObjectId)
+
+			return
+		}
+	case "create":
 		var internalStravaWebhookEvent model.StravaWebhookEvent
 		internalStravaWebhookEvent.FromExternalModel(webhookEvent)
 
-		internalStravaWebhookEvent.Save(db, nil)
+		if err := internalStravaWebhookEvent.Save(db, nil); err != nil {
+			slog.Error("strava_webhook > Failed to save webhook event.", "error", err, "event_id", webhookEvent.ObjectId)
+
+			return
+		}
 	}
 }

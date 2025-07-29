@@ -2,6 +2,7 @@ package application
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -26,6 +27,7 @@ type config struct {
 	DefaultPageLoggedOutUsers string                  `json:"default_page_logged_out"`
 	AdminPanelPage            string                  `json:"admin_panel_page"`
 	PathToTemplates           string                  `json:"path_to_templates"`
+	PathToCertCache           string                  `json:"path_to_cert_cache"`
 	SqliteDbPath              string                  `json:"sqlite_db_path"`
 	FileDbPath                string                  `json:"file_db_path"`
 	StravaConf                *stravaConfig           `json:"strava_config"`
@@ -47,42 +49,47 @@ func (conf *config) loadFromFile(fileName string) error {
 	return nil
 }
 
-func (conf *config) validate() bool {
+func (conf *config) validate() error {
 	//TODO: add real bulletproof validation
 
 	if conf.Hostname == "" {
-		return false
+		return fmt.Errorf("hostname cannot be empty")
 	}
 
 	if conf.DefaultPageLoggedInUsers == "" || conf.DefaultPageLoggedOutUsers == "" || conf.AdminPanelPage == "" {
-		return false
+		return fmt.Errorf("default pages cannot be empty")
 	}
 
 	if conf.PathToTemplates == "" {
-		return false
+		return fmt.Errorf("path to templates cannot be empty")
+	}
+
+	if conf.PathToCertCache == "" {
+		return fmt.Errorf("path to certificate cache cannot be empty")
 	}
 
 	if conf.SqliteDbPath == "" || conf.FileDbPath == "" {
-		return false
+		return fmt.Errorf("database paths cannot be empty")
 	}
 
 	if conf.StravaConf == nil || conf.OrsConf == nil {
-		return false
+		return fmt.Errorf("strava and openrouteservice configurations cannot be nil")
 	}
 
 	if conf.StravaConf.AuthorizationCallback == "" || conf.StravaConf.ClientId == 0 || conf.StravaConf.ClientSecret == "" ||
 		conf.StravaConf.Scope == "" || conf.StravaConf.WebhookCallback == "" || conf.StravaConf.VerifyToken == "" || conf.StravaConf.DeleteOldActivitiesAfterDays < 1 ||
 		conf.StravaConf.ProcessWebhookEventsAfterSec < conf.ScheduledJobIntervalSec {
-		return false
+
+		return fmt.Errorf("strava configuration is invalid")
 	}
 
 	if conf.OrsConf.ApiKey == "" {
-		return false
+		return fmt.Errorf("openrouteservice configuration is invalid")
 	}
 
 	if conf.ScheduledJobIntervalSec < 60 {
-		return false
+		return fmt.Errorf("scheduled job interval must be at least 60 seconds")
 	}
 
-	return true
+	return nil
 }

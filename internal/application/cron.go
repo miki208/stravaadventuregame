@@ -1,6 +1,7 @@
 package application
 
 import (
+	"log/slog"
 	"slices"
 	"sync"
 	"time"
@@ -51,6 +52,8 @@ func (c *Cron) Stop() {
 
 func (c *Cron) Start() {
 	go func() {
+		slog.Info("Cron service started.", "frequency", c.frequency)
+
 		timer := time.NewTimer(time.Second * time.Duration(c.frequency))
 
 	loop:
@@ -59,6 +62,8 @@ func (c *Cron) Start() {
 			case <-c.exitCh:
 				break loop
 			case <-timer.C:
+				slog.Info("Running scheduled jobs...")
+
 				c.jobsMutex.Lock()
 				jobsCopy := slices.Clone(c.jobs)
 				c.jobsMutex.Unlock()
@@ -68,6 +73,8 @@ func (c *Cron) Start() {
 				}
 
 				timer.Reset(time.Second * time.Duration(c.frequency))
+
+				slog.Info("Scheduled jobs completed.")
 			}
 		}
 
@@ -75,5 +82,7 @@ func (c *Cron) Start() {
 
 		c.exitDoneCh <- true
 		close(c.exitDoneCh)
+
+		slog.Info("Cron service stopped.")
 	}()
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/miki208/stravaadventuregame/internal/helper"
 )
 
-func Logout(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
+func Logout(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
 	// destroy the session in the session manager
 	app.SessionMgr.DestroySession(session)
 
@@ -17,4 +17,6 @@ func Logout(resp http.ResponseWriter, req *http.Request, app *application.App, s
 	http.SetCookie(resp, &session.SessionCookie)
 
 	http.Redirect(resp, req, app.DefaultPageLoggedOutUsers, http.StatusFound)
+
+	return nil
 }

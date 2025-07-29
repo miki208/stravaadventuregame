@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"os"
 	"sync"
 )
@@ -13,6 +14,8 @@ type FileDatabase struct {
 }
 
 func CreateFileDatabase(dataDirPath string) *FileDatabase {
+	slog.Info("Initializing file database...", "dataDirPath", dataDirPath)
+
 	return &FileDatabase{dataDirPath: dataDirPath}
 }
 

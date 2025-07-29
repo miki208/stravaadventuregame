@@ -7,61 +7,48 @@ import (
 	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
+	"github.com/miki208/stravaadventuregame/internal/handler"
 	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 	"github.com/miki208/stravaadventuregame/internal/service/openrouteservice"
 )
 
-func StartAdventure(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) {
+func StartAdventure(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
 	// first get location ids and validate them
 	startLocationId, err := strconv.Atoi(req.FormValue("start"))
 	if err != nil {
-		http.Error(resp, "Start location is not populated.", http.StatusBadRequest)
-
-		return
+		return handler.NewHandlerError(http.StatusBadRequest, fmt.Errorf("start location is not populated: %w", err))
 	}
 
 	stopLocationId, err := strconv.Atoi(req.FormValue("stop"))
 	if err != nil {
-		http.Error(resp, "Stop location is not populated.", http.StatusBadRequest)
-
-		return
+		return handler.NewHandlerError(http.StatusBadRequest, fmt.Errorf("stop location is not populated: %w", err))
 	}
 
 	if startLocationId == stopLocationId {
-		http.Error(resp, "Start and stop location can't be the same.", http.StatusBadRequest)
-
-		return
+		return handler.NewHandlerError(http.StatusBadRequest, fmt.Errorf("start and stop location can't be the same"))
 	}
 
 	// make sure that user is not already on an adventure
 	adventuresStarted, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": session.UserId, "completed": 0})
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 	if len(adventuresStarted) > 0 {
-		http.Error(resp, "You are already on an adventure.", http.StatusBadRequest)
-
-		return
+		return handler.NewHandlerError(http.StatusBadRequest, fmt.Errorf("active adventure already exists"))
 	}
 
 	// if everything is ok, these locations should be in the database, load them
 	var startLocation model.Location
 	found, err := startLocation.Load(startLocationId, app.SqlDb, nil)
 	if err != nil || !found {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	var stopLocation model.Location
 	found, err = stopLocation.Load(stopLocationId, app.SqlDb, nil)
 	if err != nil || !found {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	// we should check if we have this route in the database before getting it via rest api
@@ -69,9 +56,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 
 	exists, err := app.FileDb.Exists("course", dbName)
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	var adventureCourse *model.DirectionsRoute
@@ -81,17 +66,13 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 		if err != nil {
 			orsError := err.(*openrouteservice.OpenRouteServiceError)
 
-			http.Error(resp, orsError.Error(), orsError.StatusCode())
-
-			return
+			return handler.NewHandlerError(orsError.StatusCode(), orsError)
 		}
 
 		// write it to the database
 		err = app.FileDb.Write("course", dbName, route)
 		if err != nil {
-			http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-			return
+			return handler.NewHandlerError(http.StatusInternalServerError, err)
 		}
 
 		// we have the course
@@ -118,10 +99,10 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 
 	err = adventure.Save(app.SqlDb, nil)
 	if err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-
-		return
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+
+	return nil
 }
