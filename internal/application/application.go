@@ -52,7 +52,19 @@ func (app *App) Close() error {
 }
 
 func MakeApp(configFileName string) *App {
-	// first initalize the logger
+	// first load the configuration
+	var conf config
+
+	err := conf.loadFromFile(configFileName)
+	if err != nil {
+		panic(fmt.Errorf("failed to load configuration from file %s: %w", configFileName, err))
+	}
+
+	if err = conf.validate(); err != nil {
+		panic(fmt.Errorf("config validation failed: %w", err))
+	}
+
+	// then initalize the logger
 	logFile, err := os.OpenFile("application.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		panic(err)
@@ -69,22 +81,10 @@ func MakeApp(configFileName string) *App {
 	}()
 
 	logger := slog.New(slog.NewTextHandler(logFile, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: conf.getLoggingLevel(),
 	}))
 
 	slog.SetDefault(logger)
-
-	// then load the configuration
-	var conf config
-
-	err = conf.loadFromFile(configFileName)
-	if err != nil {
-		panic(fmt.Errorf("failed to load configuration from file %s: %w", configFileName, err))
-	}
-
-	if err = conf.validate(); err != nil {
-		panic(fmt.Errorf("config validation failed: %w", err))
-	}
 
 	templates := getTemplateFileNames(conf.PathToTemplates)
 

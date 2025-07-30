@@ -3,6 +3,7 @@ package application
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 )
 
@@ -22,6 +23,7 @@ type openRouteServiceConfig struct {
 }
 
 type config struct {
+	LoggingLevel              string                  `json:"logging_level"`
 	Hostname                  string                  `json:"hostname"`
 	DefaultPageLoggedInUsers  string                  `json:"default_page_logged_in"`
 	DefaultPageLoggedOutUsers string                  `json:"default_page_logged_out"`
@@ -47,6 +49,21 @@ func (conf *config) loadFromFile(fileName string) error {
 	}
 
 	return nil
+}
+
+func (conf *config) getLoggingLevel() slog.Level {
+	switch conf.LoggingLevel {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }
 
 func (conf *config) validate() error {
