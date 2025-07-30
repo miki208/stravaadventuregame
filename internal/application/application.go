@@ -33,6 +33,8 @@ type App struct {
 	CronSvc *Cron
 
 	logFile *os.File
+
+	SupportedActivityTypes []string
 }
 
 func (app *App) GetFullAuthorizationCallbackUrl() string {
@@ -114,6 +116,8 @@ func MakeApp(configFileName string) *App {
 		OrsSvc: openrouteservice.CreateService(conf.OrsConf.ApiKey),
 
 		logFile: logFile,
+
+		SupportedActivityTypes: conf.SupportedActivityTypes,
 	}
 
 	app.CronSvc = NewCron(app, conf.ScheduledJobIntervalSec)

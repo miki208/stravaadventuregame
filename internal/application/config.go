@@ -35,6 +35,7 @@ type config struct {
 	StravaConf                *stravaConfig           `json:"strava_config"`
 	OrsConf                   *openRouteServiceConfig `json:"open_route_service_config"`
 	ScheduledJobIntervalSec   int                     `json:"scheduled_job_interval_sec"`
+	SupportedActivityTypes    []string                `json:"supported_activity_types"`
 }
 
 func (conf *config) loadFromFile(fileName string) error {
@@ -106,6 +107,10 @@ func (conf *config) validate() error {
 
 	if conf.ScheduledJobIntervalSec < 60 {
 		return fmt.Errorf("scheduled job interval must be at least 60 seconds")
+	}
+
+	if len(conf.SupportedActivityTypes) == 0 {
+		return fmt.Errorf("list of supported activity types cannot be empty")
 	}
 
 	return nil

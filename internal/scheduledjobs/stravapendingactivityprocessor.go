@@ -121,8 +121,7 @@ func processOneActivity(app *application.App, ev *model.StravaWebhookEvent) bool
 				return true
 			}
 
-			allowedSportTypes := []string{"Hike", "Run", "TrailRun", "VirtualRun", "Walk", "Wheelchair"}
-			shouldAcceptNew := slices.Contains(allowedSportTypes, newActivity.SportType)
+			shouldAcceptNew := slices.Contains(app.SupportedActivityTypes, newActivity.SportType)
 
 			if shouldAcceptNew && foundOld && ev.AspectType == "update" {
 				processingResult = ActivityUpdated
