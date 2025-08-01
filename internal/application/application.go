@@ -97,7 +97,7 @@ func MakeApp(configFileName string) *App {
 		AdminPanelPage:            conf.AdminPanelPage,
 
 		Templates:  template.Must(template.ParseFiles(templates...)),
-		SessionMgr: helper.CreateSessionManager(),
+		SessionMgr: helper.CreateSessionManager(conf.SessionDurationInMinutes),
 
 		PathToCertCache: conf.PathToCertCache,
 

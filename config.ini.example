@@ -1,5 +1,6 @@
 {
     "logging_level": "debug",
+    "session_duration_in_minutes": 30,
     "hostname": "localhost",
     "default_page_logged_in": "/welcome",
     "default_page_logged_out": "/",

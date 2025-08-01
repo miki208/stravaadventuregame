@@ -15,18 +15,20 @@ type Session struct {
 type SessionManager struct {
 	sessionIdToSession map[string]Session
 	userIdToSessionId  map[int64]string
+	sessionDuration    time.Duration
 }
 
-func CreateSessionManager() *SessionManager {
+func CreateSessionManager(sessionDurationInMinutes int) *SessionManager {
 	sessionManager := &SessionManager{
 		sessionIdToSession: make(map[string]Session),
 		userIdToSessionId:  make(map[int64]string),
+		sessionDuration:    time.Duration(sessionDurationInMinutes) * time.Minute,
 	}
 
 	return sessionManager
 }
 
-func (manager *SessionManager) GetSessionBySessionId(sessionId string) *Session {
+func (manager *SessionManager) getSessionBySessionId(sessionId string) *Session {
 	session, ok := manager.sessionIdToSession[sessionId]
 	if !ok {
 		return nil
@@ -41,7 +43,7 @@ func (manager *SessionManager) GetSessionByUserId(userId int64) *Session {
 		return nil
 	}
 
-	return manager.GetSessionBySessionId(sessionId)
+	return manager.getSessionBySessionId(sessionId)
 }
 
 func (manager *SessionManager) GetSessionByRequest(req *http.Request) *Session {
@@ -50,7 +52,7 @@ func (manager *SessionManager) GetSessionByRequest(req *http.Request) *Session {
 		return nil
 	}
 
-	session := manager.GetSessionBySessionId(sessionCookie.Value)
+	session := manager.getSessionBySessionId(sessionCookie.Value)
 	if session == nil {
 		return nil
 	}
@@ -82,7 +84,7 @@ func (manager *SessionManager) CreateSession(userId int64) Session {
 		manager.DestroySession(*session)
 	}
 
-	sessionCookie := CreateSessionCookie()
+	sessionCookie := CreateSessionCookie(manager.sessionDuration)
 
 	manager.userIdToSessionId[userId] = sessionCookie.Value
 	manager.sessionIdToSession[sessionCookie.Value] = Session{UserId: userId, SessionCookie: sessionCookie}

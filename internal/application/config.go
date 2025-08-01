@@ -24,6 +24,7 @@ type openRouteServiceConfig struct {
 
 type config struct {
 	LoggingLevel              string                  `json:"logging_level"`
+	SessionDurationInMinutes  int                     `json:"session_duration_in_minutes"`
 	Hostname                  string                  `json:"hostname"`
 	DefaultPageLoggedInUsers  string                  `json:"default_page_logged_in"`
 	DefaultPageLoggedOutUsers string                  `json:"default_page_logged_out"`
@@ -69,6 +70,10 @@ func (conf *config) getLoggingLevel() slog.Level {
 
 func (conf *config) validate() error {
 	//TODO: add real bulletproof validation
+
+	if conf.SessionDurationInMinutes < 10 {
+		return fmt.Errorf("session duration must be at least 10 minutes")
+	}
 
 	if conf.Hostname == "" {
 		return fmt.Errorf("hostname cannot be empty")
