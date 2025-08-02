@@ -8,12 +8,11 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/handler"
-	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 	"github.com/miki208/stravaadventuregame/internal/service/openrouteservice"
 )
 
-func StartAdventure(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
+func StartAdventure(resp *handler.ResponseWithSession, req *http.Request, app *application.App) error {
 	// first get location ids and validate them
 	startLocationId, err := strconv.Atoi(req.FormValue("start"))
 	if err != nil {
@@ -30,7 +29,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 	}
 
 	// make sure that user is not already on an adventure
-	adventuresStarted, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": session.UserId, "completed": 0})
+	adventuresStarted, err := model.AllAdventures(app.SqlDb, nil, map[string]any{"athlete_id": resp.Session().UserId, "completed": 0})
 	if err != nil {
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
@@ -86,7 +85,7 @@ func StartAdventure(resp http.ResponseWriter, req *http.Request, app *applicatio
 
 	// create adventure and save it to the database
 	adventure := model.Adventure{
-		AthleteId:           session.UserId,
+		AthleteId:           resp.Session().UserId,
 		StartLocation:       startLocationId,
 		EndLocation:         stopLocationId,
 		CurrentLocationName: startLocation.Name,

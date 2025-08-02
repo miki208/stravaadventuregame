@@ -6,20 +6,19 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/handler"
-	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 )
 
-func Welcome(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
+func Welcome(resp *handler.ResponseWithSession, req *http.Request, app *application.App) error {
 	athlete := model.NewAthlete()
 
-	exists, err := athlete.Load(session.UserId, app.SqlDb, nil)
+	exists, err := athlete.Load(resp.Session().UserId, app.SqlDb, nil)
 	if err != nil {
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
 	if !exists {
-		app.SessionMgr.DestroySession(session)
+		app.SessionMgr.DestroySession(resp.Session())
 
 		http.Redirect(resp, req, "/?error=user_not_found", http.StatusFound)
 

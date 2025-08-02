@@ -20,3 +20,11 @@ func CreateSessionCookie(cookieDuration time.Duration) http.Cookie {
 		Path:     "/",
 	}
 }
+
+func RefreshSessionCookie(sessionCookie *http.Cookie, cookieDuration time.Duration) {
+	if sessionCookie == nil {
+		return
+	}
+
+	sessionCookie.Expires = time.Now().Add(cookieDuration)
+}

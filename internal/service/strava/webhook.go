@@ -99,7 +99,7 @@ func (svc *Strava) handleWebhookForAthlete(webhookEvent *externalmodel.StravaWeb
 
 		session := sessionManager.GetSessionByUserId(webhookEvent.ObjectId)
 		if session != nil {
-			sessionManager.DestroySession(*session)
+			sessionManager.DestroySession(session)
 		}
 
 		slog.Info("strava_webhook > Athlete deauthorized.", "athlete_id", webhookEvent.ObjectId)

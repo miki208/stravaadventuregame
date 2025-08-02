@@ -2,19 +2,16 @@ package auth
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
-	"github.com/miki208/stravaadventuregame/internal/helper"
+	"github.com/miki208/stravaadventuregame/internal/handler"
 )
 
-func Logout(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
+func Logout(resp *handler.ResponseWithSession, req *http.Request, app *application.App) error {
 	// destroy the session in the session manager
-	app.SessionMgr.DestroySession(session)
+	app.SessionMgr.DestroySession(resp.Session())
 
-	// make the cookie invalid by setting an expiration time in the past and set it in the response
-	session.SessionCookie.Expires = time.Now().Add(-time.Hour)
-	http.SetCookie(resp, &session.SessionCookie)
+	resp.InvalidateSession()
 
 	http.Redirect(resp, req, app.DefaultPageLoggedOutUsers, http.StatusFound)
 

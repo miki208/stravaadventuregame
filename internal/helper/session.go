@@ -13,14 +13,14 @@ type Session struct {
 }
 
 type SessionManager struct {
-	sessionIdToSession map[string]Session
+	sessionIdToSession map[string]*Session
 	userIdToSessionId  map[int64]string
 	sessionDuration    time.Duration
 }
 
 func CreateSessionManager(sessionDurationInMinutes int) *SessionManager {
 	sessionManager := &SessionManager{
-		sessionIdToSession: make(map[string]Session),
+		sessionIdToSession: make(map[string]*Session),
 		userIdToSessionId:  make(map[int64]string),
 		sessionDuration:    time.Duration(sessionDurationInMinutes) * time.Minute,
 	}
@@ -34,7 +34,7 @@ func (manager *SessionManager) getSessionBySessionId(sessionId string) *Session 
 		return nil
 	}
 
-	return &session
+	return session
 }
 
 func (manager *SessionManager) GetSessionByUserId(userId int64) *Session {
@@ -46,7 +46,12 @@ func (manager *SessionManager) GetSessionByUserId(userId int64) *Session {
 	return manager.getSessionBySessionId(sessionId)
 }
 
+// only this function refreshes the session
 func (manager *SessionManager) GetSessionByRequest(req *http.Request) *Session {
+	if req == nil {
+		return nil
+	}
+
 	sessionCookie, err := req.Cookie("session_id")
 	if errors.Is(err, http.ErrNoCookie) {
 		return nil
@@ -58,15 +63,21 @@ func (manager *SessionManager) GetSessionByRequest(req *http.Request) *Session {
 	}
 
 	if time.Now().After(session.SessionCookie.Expires) {
-		manager.DestroySession(*session)
+		manager.DestroySession(session)
 
 		return nil
 	}
 
+	RefreshSessionCookie(&session.SessionCookie, manager.sessionDuration)
+
 	return session
 }
 
-func (manager *SessionManager) DestroySession(session Session) {
+func (manager *SessionManager) DestroySession(session *Session) {
+	if session == nil {
+		return
+	}
+
 	sessionId, ok := manager.userIdToSessionId[session.UserId]
 	if !ok {
 		return
@@ -78,16 +89,16 @@ func (manager *SessionManager) DestroySession(session Session) {
 	slog.Debug("Session destroyed.", "userId", session.UserId, "sessionId", sessionId)
 }
 
-func (manager *SessionManager) CreateSession(userId int64) Session {
+func (manager *SessionManager) CreateSession(userId int64) *Session {
 	session := manager.GetSessionByUserId(userId)
 	if session != nil {
-		manager.DestroySession(*session)
+		manager.DestroySession(session)
 	}
 
 	sessionCookie := CreateSessionCookie(manager.sessionDuration)
 
 	manager.userIdToSessionId[userId] = sessionCookie.Value
-	manager.sessionIdToSession[sessionCookie.Value] = Session{UserId: userId, SessionCookie: sessionCookie}
+	manager.sessionIdToSession[sessionCookie.Value] = &Session{UserId: userId, SessionCookie: sessionCookie}
 
 	slog.Debug("Session created.", "userId", userId, "sessionId", sessionCookie.Value)
 

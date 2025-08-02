@@ -6,13 +6,12 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/handler"
-	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 )
 
-func AdminPanel(resp http.ResponseWriter, req *http.Request, app *application.App, session helper.Session) error {
+func AdminPanel(resp *handler.ResponseWithSession, req *http.Request, app *application.App) error {
 	athlete := model.NewAthlete()
-	found, err := athlete.Load(session.UserId, app.SqlDb, nil)
+	found, err := athlete.Load(resp.Session().UserId, app.SqlDb, nil)
 	if err != nil {
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}

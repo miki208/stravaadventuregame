@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/helper"
@@ -29,7 +30,45 @@ func (handlerError *HandlerError) Error() string {
 	return fmt.Sprintf("Handler error (%d): %v", handlerError.statusCode, handlerError.err)
 }
 
-type FuncHandlerWSession func(http.ResponseWriter, *http.Request, *application.App, helper.Session) error
+type ResponseWithSession struct {
+	http.ResponseWriter
+	session *helper.Session
+}
+
+func NewResponseWithSession(resp http.ResponseWriter, session *helper.Session) *ResponseWithSession {
+	return &ResponseWithSession{
+		ResponseWriter: resp,
+		session:        session,
+	}
+}
+
+func (resp *ResponseWithSession) InvalidateSession() {
+	if resp.session != nil {
+		resp.session.SessionCookie.Expires = time.Now().Add(-time.Hour)
+	}
+}
+
+func (resp *ResponseWithSession) Session() *helper.Session {
+	return resp.session
+}
+
+func (resp *ResponseWithSession) WriteHeader(statusCode int) {
+	if resp.session != nil {
+		http.SetCookie(resp.ResponseWriter, &resp.session.SessionCookie)
+	}
+
+	resp.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (resp *ResponseWithSession) Write(b []byte) (int, error) {
+	if resp.session != nil {
+		http.SetCookie(resp.ResponseWriter, &resp.session.SessionCookie)
+	}
+
+	return resp.ResponseWriter.Write(b)
+}
+
+type FuncHandlerWSession func(*ResponseWithSession, *http.Request, *application.App) error
 type FuncHandler func(http.ResponseWriter, *http.Request, *application.App) error
 
 func MakeHandlerWSession(app *application.App, fn FuncHandlerWSession) func(http.ResponseWriter, *http.Request) {
@@ -41,7 +80,7 @@ func MakeHandlerWSession(app *application.App, fn FuncHandlerWSession) func(http
 			return
 		}
 
-		err := fn(resp, req, app, *session)
+		err := fn(NewResponseWithSession(resp, session), req, app)
 		if err != nil {
 			slog.Error("HandlerWSession > Error occurred while handling request.", "error", err, "route", req.URL.Path, "session_id", session.SessionCookie.Value, "user_id", session.UserId)
 
