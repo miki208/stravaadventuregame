@@ -29,7 +29,7 @@ This relatively simple (for now) program pulls in activities from Strava — one
 * ~~Determining the current location based on total distance and the calculated route between two places, with reverse geolocation used to look up the location name.~~
 * ~~Embedding calculated data into Strava activity descriptions.~~
 * ~~Detecting completed adventures.~~
-* Logging.
+* ~~Logging.~~
 
 ## Plans for the future
 
