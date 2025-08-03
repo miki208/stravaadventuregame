@@ -14,6 +14,7 @@ import (
 )
 
 type App struct {
+	ServerType                ServerType
 	Hostname                  string
 	DefaultPageLoggedInUsers  string
 	DefaultPageLoggedOutUsers string
@@ -91,6 +92,7 @@ func MakeApp(configFileName string) *App {
 	templates := getTemplateFileNames(conf.PathToTemplates)
 
 	app := &App{
+		ServerType:                ServerTypeFromString(conf.ServerType),
 		Hostname:                  conf.Hostname,
 		DefaultPageLoggedInUsers:  conf.DefaultPageLoggedInUsers,
 		DefaultPageLoggedOutUsers: conf.DefaultPageLoggedOutUsers,

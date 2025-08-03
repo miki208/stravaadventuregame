@@ -1,4 +1,5 @@
 {
+    "server_type": "https",
     "logging_level": "debug",
     "session_duration_in_minutes": 30,
     "hostname": "localhost",

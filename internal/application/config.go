@@ -23,6 +23,7 @@ type openRouteServiceConfig struct {
 }
 
 type config struct {
+	ServerType                string                  `json:"server_type"`
 	LoggingLevel              string                  `json:"logging_level"`
 	SessionDurationInMinutes  int                     `json:"session_duration_in_minutes"`
 	Hostname                  string                  `json:"hostname"`
@@ -70,6 +71,10 @@ func (conf *config) getLoggingLevel() slog.Level {
 
 func (conf *config) validate() error {
 	//TODO: add real bulletproof validation
+
+	if conf.ServerType != "http" && conf.ServerType != "https" {
+		return fmt.Errorf("server type must be either 'http' or 'https'")
+	}
 
 	if conf.SessionDurationInMinutes < 10 {
 		return fmt.Errorf("session duration must be at least 10 minutes")
