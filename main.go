@@ -35,7 +35,6 @@ func main() {
 		PathToCertCache: app.PathToCertCache,
 	}
 
-	srvFactory.CreateServer(app.ServerType)
 	srv := srvFactory.CreateServer(app.ServerType)
 
 	srv.AddRoute(app.DefaultPageLoggedOutUsers, handler.MakeHandlerWoutSession(app, noauth.Authorize))
