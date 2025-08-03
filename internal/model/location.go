@@ -58,11 +58,11 @@ func AllLocations(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Location, er
 
 	defer rows.Close()
 
-	var locatioons []Location
+	var locations []Location
 	for rows.Next() {
-		locatioons = append(locatioons, Location{})
+		locations = append(locations, Location{})
 
-		locationToEdit := &locatioons[len(locatioons)-1]
+		locationToEdit := &locations[len(locations)-1]
 		if err = rows.Scan(&locationToEdit.Id, &locationToEdit.Lat, &locationToEdit.Lon, &locationToEdit.Name); err != nil {
 			return nil, err
 		}
@@ -72,5 +72,5 @@ func AllLocations(db *sql.DB, tx *sql.Tx, filter map[string]any) ([]Location, er
 		return nil, err
 	}
 
-	return locatioons, nil
+	return locations, nil
 }

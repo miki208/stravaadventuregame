@@ -10,7 +10,6 @@ import (
 
 type Athlete struct {
 	*externalmodel.Athlete
-	isAdmin int
 }
 
 func (athlete *Athlete) FromExternalModel(externalAthlete *externalmodel.Athlete) {
@@ -33,7 +32,7 @@ func (athl *Athlete) Load(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {
 		row = db.QueryRow(query, params...)
 	}
 
-	err = row.Scan(&athl.Id, &athl.FirstName, &athl.LastName, &athl.City, &athl.Country, &athl.Sex, &athl.isAdmin)
+	err = row.Scan(&athl.Id, &athl.FirstName, &athl.LastName, &athl.City, &athl.Country, &athl.Sex)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			err = nil
@@ -55,20 +54,20 @@ func (athl *Athlete) Save(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	if found {
-		query := "UPDATE Athlete SET first_name=?, last_name=?, city=?, country=?, sex=?, is_admin=? WHERE id=?"
+		query := "UPDATE Athlete SET first_name=?, last_name=?, city=?, country=?, sex=? WHERE id=?"
 
 		if tx != nil {
-			_, err = tx.Exec(query, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
+			_, err = tx.Exec(query, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.Id)
 		} else {
-			_, err = db.Exec(query, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin, athl.Id)
+			_, err = db.Exec(query, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.Id)
 		}
 	} else {
-		query := "INSERT INTO Athlete VALUES(?, ?, ?, ?, ?, ?, ?)"
+		query := "INSERT INTO Athlete VALUES(?, ?, ?, ?, ?, ?)"
 
 		if tx != nil {
-			_, err = tx.Exec(query, athl.Id, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin)
+			_, err = tx.Exec(query, athl.Id, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex)
 		} else {
-			_, err = db.Exec(query, athl.Id, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex, athl.isAdmin)
+			_, err = db.Exec(query, athl.Id, athl.FirstName, athl.LastName, athl.City, athl.Country, athl.Sex)
 		}
 	}
 
@@ -87,18 +86,6 @@ func (athl *Athlete) Delete(db *sql.DB, tx *sql.Tx) error {
 	}
 
 	return err
-}
-
-func (athl *Athlete) IsAdmin() bool {
-	return athl.isAdmin > 0
-}
-
-func (athl *Athlete) SetIsAdmin(isAdmin bool) {
-	if isAdmin {
-		athl.isAdmin = 1
-	} else {
-		athl.isAdmin = 0
-	}
 }
 
 func AthleteExists(id int64, db *sql.DB, tx *sql.Tx) (bool, error) {

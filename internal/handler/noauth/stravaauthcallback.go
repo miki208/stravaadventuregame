@@ -48,16 +48,9 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 	defer tx.Rollback()
 
 	// determine if the athlete already exists (is it updating or creating a new one?)
-	existingAthlete := model.NewAthlete()
-	existingFound, err := existingAthlete.Load(athlete.Id, app.SqlDb, tx)
+	athleteExists, err := model.AthleteExists(athlete.Id, app.SqlDb, tx)
 	if err != nil {
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
-	}
-
-	if existingFound {
-		// this is to resolve a bug where admin status was lost during login
-
-		athlete.SetIsAdmin(existingAthlete.IsAdmin())
 	}
 
 	err = athlete.Save(app.SqlDb, tx)
@@ -68,6 +61,20 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 	err = credentials.Save(app.SqlDb, tx)
 	if err != nil {
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
+	}
+
+	if !athleteExists {
+		// if athlete does not exist, create athlete settings
+		var athleteSettings = model.AthleteSettings{
+			AthleteId:                     athlete.Id,
+			AutoUpdateActivityDescription: 0,
+			IsAdmin:                       0,
+		}
+
+		err = athleteSettings.Save(app.SqlDb, tx)
+		if err != nil {
+			return handler.NewHandlerError(http.StatusInternalServerError, err)
+		}
 	}
 
 	err = database.CommitOrRollbackSQLiteTransaction(tx)

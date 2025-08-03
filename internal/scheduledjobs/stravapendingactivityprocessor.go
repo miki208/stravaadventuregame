@@ -419,6 +419,22 @@ func onAdventureCompleted(adventure *model.Adventure, activity *model.Activity, 
 }
 
 func onProgressCommited(adventure *model.Adventure, activity *model.Activity, app *application.App, eventType string) error {
+	// for now, just update the activity description with the adventure progress (if enabled)
+
+	var athleteSettings model.AthleteSettings
+	found, err := athleteSettings.Load(adventure.AthleteId, app.SqlDb, nil)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		return errors.New("settings not found")
+	}
+
+	if athleteSettings.AutoUpdateActivityDescription == 0 {
+		return nil
+	}
+
 	if eventType != "create" {
 		return nil
 	}

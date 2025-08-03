@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS "StravaCredential" (
 	"access_token"	TEXT NOT NULL,
 	"refresh_token"	TEXT NOT NULL,
 	"expires_at"	INTEGER NOT NULL,
-	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
-	PRIMARY KEY("athlete_id")
+	PRIMARY KEY("athlete_id"),
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE
 );
 DROP TABLE IF EXISTS "Adventure";
 CREATE TABLE IF NOT EXISTS "Adventure" (
@@ -27,21 +27,10 @@ CREATE TABLE IF NOT EXISTS "Adventure" (
 	"completed"	INTEGER NOT NULL DEFAULT 0,
 	"start_date"	INTEGER NOT NULL,
 	"end_date"	INTEGER,
-	FOREIGN KEY("end_location") REFERENCES "Location"("id") ON DELETE CASCADE,
+	PRIMARY KEY("athlete_id","start_location","end_location"),
 	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
-	FOREIGN KEY("start_location") REFERENCES "Location"("id") ON DELETE CASCADE,
-	PRIMARY KEY("athlete_id","start_location","end_location")
-);
-DROP TABLE IF EXISTS "Athlete";
-CREATE TABLE IF NOT EXISTS "Athlete" (
-	"id"	INTEGER NOT NULL,
-	"first_name"	TEXT,
-	"last_name"	TEXT,
-	"city"	TEXT,
-	"country"	TEXT,
-	"sex"	TEXT,
-	"is_admin"	INTEGER NOT NULL DEFAULT 0,
-	PRIMARY KEY("id")
+	FOREIGN KEY("end_location") REFERENCES "Location"("id") ON DELETE CASCADE,
+	FOREIGN KEY("start_location") REFERENCES "Location"("id") ON DELETE CASCADE
 );
 DROP TABLE IF EXISTS "PendingActivity";
 CREATE TABLE IF NOT EXISTS "PendingActivity" (
@@ -49,8 +38,8 @@ CREATE TABLE IF NOT EXISTS "PendingActivity" (
 	"athlete_id"	INTEGER NOT NULL,
 	"aspect_type"	TEXT NOT NULL,
 	"event_time"	INTEGER NOT NULL,
-	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
-	PRIMARY KEY("id")
+	PRIMARY KEY("id"),
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE
 );
 DROP TABLE IF EXISTS "Activity";
 CREATE TABLE IF NOT EXISTS "Activity" (
@@ -63,7 +52,25 @@ CREATE TABLE IF NOT EXISTS "Activity" (
 	"elapsed_time"	INTEGER NOT NULL,
 	"elevation_gain"	REAL NOT NULL,
 	"description"	TEXT NOT NULL,
-	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE,
+	PRIMARY KEY("id"),
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE
+);
+DROP TABLE IF EXISTS "AthleteSettings";
+CREATE TABLE IF NOT EXISTS "AthleteSettings" (
+	"athlete_id"	INTEGER NOT NULL,
+	"auto_update_activity_description"	INTEGER NOT NULL DEFAULT 0,
+	"is_admin"	INTEGER NOT NULL DEFAULT 0,
+	PRIMARY KEY("athlete_id"),
+	FOREIGN KEY("athlete_id") REFERENCES "Athlete"("id") ON DELETE CASCADE
+);
+DROP TABLE IF EXISTS "Athlete";
+CREATE TABLE IF NOT EXISTS "Athlete" (
+	"id"	INTEGER NOT NULL,
+	"first_name"	TEXT,
+	"last_name"	TEXT,
+	"city"	TEXT,
+	"country"	TEXT,
+	"sex"	TEXT,
 	PRIMARY KEY("id")
 );
 COMMIT;

@@ -6,6 +6,7 @@ import (
 
 	"github.com/miki208/stravaadventuregame/internal/application"
 	"github.com/miki208/stravaadventuregame/internal/handler"
+	"github.com/miki208/stravaadventuregame/internal/helper"
 	"github.com/miki208/stravaadventuregame/internal/model"
 )
 
@@ -20,7 +21,12 @@ func AdminPanel(resp *handler.ResponseWithSession, req *http.Request, app *appli
 		return handler.NewHandlerError(http.StatusInternalServerError, fmt.Errorf("athlete not found"))
 	}
 
-	if !athlete.IsAdmin() {
+	isAdmin, err := helper.IsAthleteAdmin(athlete.Id, app.SqlDb, nil)
+	if err != nil {
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
+	}
+
+	if !isAdmin {
 		http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
 
 		return nil
