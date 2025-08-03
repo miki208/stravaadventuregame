@@ -440,10 +440,10 @@ func onProgressCommited(adventure *model.Adventure, activity *model.Activity, ap
 
 	var descriptionText string
 	if adventure.Completed == 1 {
-		descriptionText = fmt.Sprintf("Adventure completed! I have reached %s (started from %s, at %s (GMT)). Total distance: %.2f km.",
+		descriptionText = fmt.Sprintf("Adventure completed!\nI have reached %s (started from %s, at %s (GMT)).\nTotal distance: %.2f km.",
 			locationEnd.Name, locationStart.Name, time.Unix(int64(adventure.StartDate), 0).UTC().Format(time.DateTime), adventure.TotalDistance)
 	} else {
-		descriptionText = fmt.Sprintf("Adventure in progress! I am at %s (started from %s, at %s (GMT), going to %s). Distance traveled: %.2f/%.2f km.",
+		descriptionText = fmt.Sprintf("Adventure in progress!\nI am at %s (started from %s, at %s (GMT), going to %s).\nDistance traveled: %.2f/%.2f km.",
 			adventure.CurrentLocationName, locationStart.Name, time.Unix(int64(adventure.StartDate), 0).UTC().Format(time.DateTime), locationEnd.Name,
 			adventure.CurrentDistance, adventure.TotalDistance)
 	}
