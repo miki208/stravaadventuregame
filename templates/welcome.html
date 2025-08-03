@@ -6,122 +6,324 @@
   <title>Welcome</title>
   <style>
     body {
+      margin: 0;
       font-family: sans-serif;
+      background-color: #fff8f0;
+      color: #4b3b2a;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .dark-mode {
+      background-color: #2e2e2e;
+      color: #f5f5f5;
+    }
+
+    .dark-mode header {
+      background-color: #4d5f82;
+      border-bottom: 2px solid #5b4538;
+    }
+
+    .dark-mode .connected-status {
+      color: #cdbba7;
+    }
+
+    .dark-mode .athlete-name {
+      color: #f0e6d2;
+    }
+
+    .dark-mode .card {
+      background-color: #4d5f82; 
+      color: #f5e8da;
+      border: 1px solid #5b4538;
+    }
+
+    .dark-mode #menu {
+      background-color: #364561;
+      border-color: #5b4538;
+    }
+
+    .dark-mode #menu a, .dark-mode #menu button {
+      color: #f0e6d2;
+      background-color: #3e5073;
+    }
+
+    .dark-mode #menu a:hover, .dark-mode #menu button:hover {
+      color: #f0e6d2;
+      background-color: #495e87;
+    }
+
+    .dark-mode button {
+      background-color: #3e5073; 
+      color: #f0e6d2;       
+    }
+
+    .dark-mode button:hover {
+      background-color: #4d5f82;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px 30px;
+      background-color: #fce9dd;
+      border-bottom: 2px solid #e5c6b2;
+      align-items: flex-start;
+    }
+
+    .left {
+      font-size: 1.2em;
+      line-height: 1.4;
+    }
+
+    .athlete-name {
+      font-size: 1.4em;
+      font-weight: bold;
+    }
+
+    .connected-status {
+      font-size: 0.9em;
+      color: #7a6e60;
+    }
+
+    .right {
+      position: relative;
+    }
+
+    #menuToggle {
+      font-size: 1.4em;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    #menu {
+      position: absolute;
+      right: 0;
+      top: 40px;
+      background-color: #fffaf3;
+      border: 1px solid #cdb8a1;
+      list-style: none;
+      padding: 12px 20px;
+      width: 200px;
+      box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+      text-align: left;
+      border-radius: 8px;
+    }
+
+    #menu.hidden {
+      display: none;
+    }
+
+    #menu li {
+      margin: 12px 0;
+      white-space: nowrap;
+    }
+
+    #menu a, #menu button {
+      width: 100%;
+      display: block;
+      text-align: left;
+      text-decoration: none;
+      color: #5c3d2e;
+      background: none;
+      border: none;
+      font-size: 1em;
+      cursor: pointer;
+      padding: 5px 0;
+    }
+
+    #menu a:hover, #menu button:hover {
+      width: 100%;
+      display: block;
+      text-align: left;
+      text-decoration: none;
+      color: #735c51;
+      background-color: #cdb8a1;
+      border: none;
+      font-size: 1em;
+      cursor: pointer;
+      padding: 5px 0;
+    }
+
+    main {
+      padding: 30px 15px;
+      max-width: 900px;
+      margin: auto;
       text-align: center;
-      margin-top: 50px;
     }
-    table {
-      margin: 30px auto;
-      border-collapse: collapse;
-      width: 80%;
+
+    h2 {
+      margin-top: 40px;
+      border-bottom: 2px solid #e5c6b2;
+      padding-bottom: 5px;
     }
-    th, td {
-      padding: 12px;
-      border: 1px solid #ccc;
+
+    .card {
+      background-color: #fff2e0;
+      border: 1px solid #f1d2b7;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      text-align: left;
+      max-width: 600px;
     }
-    th {
-      background-color: #f2f2f2;
-    }
-    hr {
-      margin: 50px auto;
-      width: 80%;
-    }
+
     form {
-      margin-top: 30px;
+      margin-top: 20px;
+      display: inline-block;
+      text-align: left;
     }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
     select, button {
       padding: 8px;
-      margin: 5px;
+      margin-top: 5px;
       font-size: 1em;
+      border-radius: 5px;
+      border: 1px solid #d7b49e;
+      background-color: #f7e1cf;
     }
+
+    button {
+      background-color: #f2c7b5;
+      color: #4b3b2a;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:hover {
+      background-color: #e7ae95;
+    }
+
+    p.subtitle {
+      font-size: 1.1em;
+      margin: 10px 0 30px;
+      color: #7a6e60;
+    }
+    .form-row {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
   </style>
 </head>
 <body>
-  <h1>Welcome, {{.Athl.FirstName}} {{.Athl.LastName}}!</h1>
-  <p>You have successfully connected your Strava account.</p>
-  <p>
-    <a href="/logout">Logout</a> |
-    <a href="/settings">User Settings</a>
-  </p>
 
-  <hr />
+  <header>
+    <div class="left">
+      🏃 <span class="athlete-name">{{.Athl.FirstName}} {{.Athl.LastName}}</span><br/>
+      <span class="connected-status">You have successfully connected your Strava account.</span>
+    </div>
+    <div class="right">
+      <button id="menuToggle">☰</button>
+      <ul id="menu" class="hidden">
+        <li><button onclick="toggleTheme()">🌙 Toggle theme</button></li>
+        <li><a href="/settings">⚙️ User Settings</a></li>
+        <li><a href="/logout">🚪 Logout</a></li>
+      </ul>
+    </div>
+  </header>
 
-  {{if .StartedAdventures}}
-  <table>
-    <thead>
-      <tr>
-        <th>Start</th>
-        <th>End</th>
-        <th>Distance (km)</th>
-        <th>Current location</th>
-        <th>Start date</th>
-      </tr>
-    </thead>
-    <tbody>
+  <main>
+    {{if .StartedAdventures}}
+    <section>
+      <h2>Ongoing Adventures</h2>
       {{range .StartedAdventures}}
-      <tr>
-        <td>{{.StartLocation.Name}}</td>
-        <td>{{.EndLocation.Name}}</td>
-        <td>{{.Adventure.CurrentDistance}}/{{.Adventure.TotalDistance}} km</td>
-        <td>{{.Adventure.CurrentLocationName}}</td>
-        <td>{{.StartDateFormated}} (GMT)</td>
-      </tr>
+      <div class="card">
+        <p><strong>Start:</strong> {{.StartLocation.Name}}</p>
+        <p><strong>End:</strong> {{.EndLocation.Name}}</p>
+        <p><strong>Distance:</strong> {{.Adventure.CurrentDistance}} / {{.Adventure.TotalDistance}} km</p>
+        <p><strong>Current location:</strong> {{.Adventure.CurrentLocationName}}</p>
+        <p><strong>Start date:</strong> {{.StartDateFormated}} (GMT)</p>
+      </div>
       {{end}}
-    </tbody>
-  </table>
-  {{else}}
-  <p>You didn't start any adventure.</p>
-  {{end}}
+    </section>
+    {{else}}
+    <p>You didn't start any adventure.</p>
+    {{end}}
 
-  <hr />
-
-  {{if .CompletedAdventures}}
-  <table>
-    <thead>
-      <tr>
-        <th>Start</th>
-        <th>End</th>
-        <th>Distance (km)</th>
-        <th>Start date</th>
-        <th>End date</th>
-      </tr>
-    </thead>
-    <tbody>
-        <td>{{.StartLocation.Name}}</td>
-        <td>{{.EndLocation.Name}}</td>
-        <td>{{.Adventure.CurrentDistance}}/{{.Adventure.TotalDistance}} km</td>
-        <td>{{.StartDateFormated}} (GMT)</td>
-        <td>{{.EndDateFormatted}} (GMT)</td>
-    </tbody>
-  </table>
-  {{else}}
-  <p>You didn't complete any adventure.</p>
-  {{end}}
-
-  <hr />
-
-  {{if not .StartedAdventures}}
-  <p>Start new adventure from the list</p>
-
-  <form action="/start-adventure" method="POST">
-    <label for="start">Start location:</label>
-    <select id="start" name="start">
-      {{ range .AvailableLocations }}
-      <option value="{{.Id}}">{{.Name}}</option>
+    {{if .CompletedAdventures}}
+    <section>
+      <h2></h2>Completed Adventures</h2>
+      {{range .CompletedAdventures}}
+      <div class="card">
+        <p><strong>Start:</strong> {{.StartLocation.Name}}</p>
+        <p><strong>End:</strong> {{.EndLocation.Name}}</p>
+        <p><strong>Distance:</strong> {{.Adventure.CurrentDistance}} / {{.Adventure.TotalDistance}} km</p>
+        <p><strong>Start date:</strong> {{.StartDateFormated}} (GMT)</p>
+        <p><strong>End date:</strong> {{.EndDateFormatted}} (GMT)</p>
+      </div>
       {{end}}
-    </select>
+    </section>
+    {{else}}
+    <p>You didn't complete any adventure.</p>
+    {{end}}
 
-    <label for="stop">Stop location:</label>
-    <select id="stop" name="stop">
-      {{ range .AvailableLocations }}
-      <option value="{{.Id}}">{{.Name}}</option>
-      {{end}}
-    </select>
+    {{if not .StartedAdventures}}
+    <section>
+      <h2>Start a New Adventure</h2>
+        <form action="/start-adventure" method="POST">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="start">Start location:</label>
+              <select id="start" name="start">
+                {{ range .AvailableLocations }}
+                <option value="{{.Id}}">{{.Name}}</option>
+                {{end}}
+              </select>
+            </div>
 
-    <br/>
-    <button type="submit">Start Adventure</button>
-  </form>
-  {{end}}
+            <div class="form-group">
+              <label for="stop">Stop location:</label>
+              <select id="stop" name="stop">
+                {{ range .AvailableLocations }}
+                <option value="{{.Id}}">{{.Name}}</option>
+                {{end}}
+              </select>
+            </div>
+          </div>
 
+          <div style="text-align: center;">
+            <button type="submit">🚀 Start Adventure</button>
+          </div>
+        </form>
+    </section>
+    {{end}}
+  </main>
+
+  <script>
+    const body = document.body;
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        body.classList.add("dark-mode");
+      }
+    });
+
+    function toggleTheme() {
+      body.classList.toggle("dark-mode");
+      const newTheme = body.classList.contains("dark-mode") ? "dark" : "light";
+      localStorage.setItem("theme", newTheme);
+    }
+
+    document.getElementById("menuToggle").onclick = () => {
+      document.getElementById("menu").classList.toggle("hidden");
+    };
+  </script>
 </body>
 </html>
