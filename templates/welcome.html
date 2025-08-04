@@ -8,7 +8,7 @@
     body {
       margin: 0;
       font-family: sans-serif;
-      background-color: #fff8f0;
+      background-color: #E1F6FB;
       color: #4b3b2a;
       transition: background-color 0.3s, color 0.3s;
     }
@@ -19,7 +19,7 @@
     }
 
     .dark-mode header {
-      background-color: #4d5f82;
+      background-color: #5E74A1;
       border-bottom: 2px solid #5b4538;
     }
 
@@ -65,7 +65,7 @@
       display: flex;
       justify-content: space-between;
       padding: 15px 30px;
-      background-color: #fce9dd;
+      background-color: #90ADCB;
       border-bottom: 2px solid #e5c6b2;
       align-items: flex-start;
     }
@@ -100,7 +100,7 @@
       position: absolute;
       right: 0;
       top: 40px;
-      background-color: #fffaf3;
+      background-color: #7195BC;
       border: 1px solid #cdb8a1;
       list-style: none;
       padding: 12px 20px;
@@ -138,7 +138,7 @@
       text-align: left;
       text-decoration: none;
       color: #735c51;
-      background-color: #cdb8a1;
+      background-color: #98B1CE;
       border: none;
       font-size: 1em;
       cursor: pointer;
@@ -159,7 +159,7 @@
     }
 
     .card {
-      background-color: #fff2e0;
+      background-color: #AFC4D9;
       border: 1px solid #f1d2b7;
       padding: 15px;
       border-radius: 8px;
@@ -185,19 +185,19 @@
       margin-top: 5px;
       font-size: 1em;
       border-radius: 5px;
-      border: 1px solid #d7b49e;
-      background-color: #f7e1cf;
+      border: 1px solid #f7e1cf;
+      background-color: #7195BC;
     }
 
     button {
-      background-color: #f2c7b5;
+      background-color: #7195BC;
       color: #4b3b2a;
       cursor: pointer;
       margin-top: 15px;
     }
 
     button:hover {
-      background-color: #e7ae95;
+      background-color: #98B1CE;
     }
 
     p.subtitle {
@@ -231,7 +231,7 @@
     <div class="right">
       <button id="menuToggle">☰</button>
       <ul id="menu" class="hidden">
-        <li><button onclick="toggleTheme()">🌙 Toggle theme</button></li>
+        <li><button onclick="toggleTheme()">🌓 Toggle theme</button></li>
         <li><a href="/settings">⚙️ User Settings</a></li>
         <li><a href="/logout">🚪 Logout</a></li>
       </ul>
@@ -239,38 +239,38 @@
   </header>
 
   <main>
+    <h2>Ongoing Adventures</h2>
     {{if .StartedAdventures}}
     <section>
-      <h2>Ongoing Adventures</h2>
       {{range .StartedAdventures}}
       <div class="card">
-        <p><strong>Start:</strong> {{.StartLocation.Name}}</p>
-        <p><strong>End:</strong> {{.EndLocation.Name}}</p>
-        <p><strong>Distance:</strong> {{.Adventure.CurrentDistance}} / {{.Adventure.TotalDistance}} km</p>
-        <p><strong>Current location:</strong> {{.Adventure.CurrentLocationName}}</p>
-        <p><strong>Start date:</strong> {{.StartDateFormatted}} (GMT)</p>
+        <p>📍 <strong>Start:</strong> {{.StartLocation.Name}}</p>
+        <p>📍 <strong>End:</strong> {{.EndLocation.Name}}</p>
+        <p>📏 <strong>Distance:</strong> {{.Adventure.CurrentDistance}} / {{.Adventure.TotalDistance}} km</p>
+        <p>🧭 <strong>Current location:</strong> {{.Adventure.CurrentLocationName}}</p>
+        <p>📅 <strong>Start date:</strong> {{.StartDateFormatted}} (GMT)</p>
       </div>
       {{end}}
     </section>
     {{else}}
-    <p>You didn't start any adventure.</p>
+    <p>No adventures started yet - time to hit the road!</p>
     {{end}}
 
+    <h2>Completed Adventures</h2>
     {{if .CompletedAdventures}}
     <section>
-      <h2></h2>Completed Adventures</h2>
       {{range .CompletedAdventures}}
       <div class="card">
-        <p><strong>Start:</strong> {{.StartLocation.Name}}</p>
-        <p><strong>End:</strong> {{.EndLocation.Name}}</p>
-        <p><strong>Distance:</strong> {{.Adventure.CurrentDistance}} / {{.Adventure.TotalDistance}} km</p>
-        <p><strong>Start date:</strong> {{.StartDateFormatted}} (GMT)</p>
-        <p><strong>End date:</strong> {{.EndDateFormatted}} (GMT)</p>
+        <p><strong>📍 Start:</strong> {{.StartLocation.Name}}</p>
+        <p><strong>📍 End:</strong> {{.EndLocation.Name}}</p>
+        <p><strong>🗺️ Distance:</strong> {{.Adventure.CurrentDistance}} / {{.Adventure.TotalDistance}} km</p>
+        <p><strong>📅 Start date:</strong> {{.StartDateFormatted}} (GMT)</p>
+        <p><strong>📅 End date:</strong> {{.EndDateFormatted}} (GMT)</p>
       </div>
       {{end}}
     </section>
     {{else}}
-    <p>You didn't complete any adventure.</p>
+    <p>⏳ Still waiting for that finish line! No completed adventures.</p>
     {{end}}
 
     {{if not .StartedAdventures}}
