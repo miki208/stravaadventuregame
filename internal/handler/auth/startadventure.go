@@ -37,6 +37,15 @@ func StartAdventure(resp *handler.ResponseWithSession, req *http.Request, app *a
 		return handler.NewHandlerError(http.StatusBadRequest, fmt.Errorf("active adventure already exists"))
 	}
 
+	// make sure that user isn't already finished this adventure
+	adventureAlreadyExists, err := model.AdventureExists(resp.Session().UserId, startLocationId, stopLocationId, app.SqlDb, nil)
+	if err != nil {
+		return handler.NewHandlerError(http.StatusInternalServerError, err)
+	}
+	if adventureAlreadyExists {
+		return handler.NewHandlerError(http.StatusBadRequest, fmt.Errorf("adventure already exists"))
+	}
+
 	// if everything is ok, these locations should be in the database, load them
 	var startLocation model.Location
 	found, err := startLocation.Load(startLocationId, app.SqlDb, nil)
