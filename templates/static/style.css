@@ -277,3 +277,7 @@ p.subtitle {
     padding: 0.5rem 1rem;
     border-radius: 6px;
 }
+
+h1 {
+    margin-bottom: 2rem;
+}

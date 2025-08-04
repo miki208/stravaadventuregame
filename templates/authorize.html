@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="static/style.css">
 </head>
 <body style="text-align: center; margin-top: 50px; font-family: sans-serif;">
-
+  <button class="theme-toggle-btn" onclick="toggleTheme()">🌓</button>
   <h2>Click to the Strava logo below to authorize/login.</h2>
 
   <a href="https://www.strava.com/oauth/authorize?client_id={{.ClientId}}&response_type=code&redirect_uri={{.RedirectUri}}&approval_prompt=auto&scope={{.Scope}}">
