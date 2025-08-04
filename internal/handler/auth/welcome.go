@@ -31,11 +31,11 @@ func Welcome(resp *handler.ResponseWithSession, req *http.Request, app *applicat
 	}
 
 	type AdventureExtended struct {
-		Adventure         *model.Adventure
-		StartLocation     *model.Location
-		EndLocation       *model.Location
-		StartDateFormated string
-		EndDateFormated   string
+		Adventure          *model.Adventure
+		StartLocation      *model.Location
+		EndLocation        *model.Location
+		StartDateFormatted string
+		EndDateFormatted   string
 	}
 
 	adventureToAdventureExtended := func(adv *model.Adventure) (AdventureExtended, error) {
@@ -52,11 +52,11 @@ func Welcome(resp *handler.ResponseWithSession, req *http.Request, app *applicat
 		}
 
 		return AdventureExtended{
-			Adventure:         adv,
-			StartLocation:     &startLocation,
-			EndLocation:       &endLocation,
-			StartDateFormated: time.Unix(int64(adv.StartDate), 0).UTC().Format(time.DateTime),
-			EndDateFormated:   time.Unix(int64(adv.EndDate), 0).UTC().Format(time.DateTime),
+			Adventure:          adv,
+			StartLocation:      &startLocation,
+			EndLocation:        &endLocation,
+			StartDateFormatted: time.Unix(int64(adv.StartDate), 0).UTC().Format(time.DateTime),
+			EndDateFormatted:   time.Unix(int64(adv.EndDate), 0).UTC().Format(time.DateTime),
 		}, nil
 	}
 
