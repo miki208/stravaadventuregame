@@ -9,6 +9,7 @@ import (
 	"github.com/miki208/stravaadventuregame/internal/handler"
 	"github.com/miki208/stravaadventuregame/internal/handler/auth"
 	"github.com/miki208/stravaadventuregame/internal/handler/noauth"
+	"github.com/miki208/stravaadventuregame/internal/handler/other"
 	"github.com/miki208/stravaadventuregame/internal/scheduledjobs"
 )
 
@@ -48,6 +49,7 @@ func main() {
 	srv.AddRoute("/stravawebhook/delete", handler.MakeHandlerWSession(app, auth.DeleteStravaWebhookSubscription))
 	srv.AddRoute("/stravawebhook/create", handler.MakeHandlerWSession(app, auth.CreateStravaWebhookSubscription))
 	srv.AddRoute(app.StravaSvc.GetWebhookCallback(), handler.MakeHandlerWoutSession(app, noauth.StravaWebhookCallback))
+	srv.AddRoute("/static/", handler.MakeHandler(app, other.FileServer))
 
 	srv.ListenAndServe()
 }

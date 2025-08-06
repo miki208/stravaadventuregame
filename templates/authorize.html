@@ -10,7 +10,7 @@
   <h2>Click to the Strava logo below to authorize/login.</h2>
 
   <a href="https://www.strava.com/oauth/authorize?client_id={{.ClientId}}&response_type=code&redirect_uri={{.RedirectUri}}&approval_prompt=auto&scope={{.Scope}}">
-    <img src="https://strautomator.com/images/strava-connect.svg" alt="Connect with Strava"/>
+    <img src="static/images/strava-connect.svg" alt="Connect with Strava"/>
   </a>
 
   {{if ne .Error ""}}
