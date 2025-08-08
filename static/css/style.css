@@ -162,6 +162,16 @@ h2 {
     max-width: 600px;
 }
 
+.map-container {
+  width: 100%;
+  max-width: 600px; /* or whatever your card's max-width is */
+  margin: 0 auto;
+  box-sizing: border-box;
+  height: 300px;
+  background: #e0e0e0; /* placeholder background */
+  margin-bottom: 1.5rem;
+}
+
 form {
     margin-top: 20px;
     display: inline-block;

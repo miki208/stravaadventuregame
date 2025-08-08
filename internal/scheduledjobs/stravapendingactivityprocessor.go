@@ -372,6 +372,9 @@ func onTotalDistanceUpdated(adventure *model.Adventure, activity *model.Activity
 				return errors.New("start location not found")
 			}
 
+			adventure.CurrentLocationLat = startLocation.Lat
+			adventure.CurrentLocationLon = startLocation.Lon
+			adventure.CurrentLocationIndexOnRoute = 0
 			adventure.CurrentLocationName = startLocation.Name
 		} else {
 			courseDbName := fmt.Sprintf("%d-%d", min(adventure.StartLocation, adventure.EndLocation),
@@ -383,16 +386,21 @@ func onTotalDistanceUpdated(adventure *model.Adventure, activity *model.Activity
 				return err
 			}
 
-			lon, lat, err := helper.GetPointFromPolylineAndDistance(route.Geometry, adventure.StartLocation > adventure.EndLocation, adventure.CurrentDistance*1000)
+			routePolyline, err := helper.DecodePolyline(route.Geometry, adventure.StartLocation > adventure.EndLocation)
 			if err != nil {
 				return err
 			}
 
-			geocodeResults, err := app.OrsSvc.ReverseGeocode(lon, lat, 10, "country,region,locality,localadmin")
+			currentPoint, index := helper.PointAndIndexAtDistanceAlongLine(routePolyline, float64(adventure.CurrentDistance*1000))
+
+			geocodeResults, err := app.OrsSvc.ReverseGeocode(currentPoint.Lon(), currentPoint.Lat(), 10, "country,region,locality,localadmin")
 			if err != nil {
 				return err
 			}
 
+			adventure.CurrentLocationLat = currentPoint.Lat()
+			adventure.CurrentLocationLon = currentPoint.Lon()
+			adventure.CurrentLocationIndexOnRoute = index
 			adventure.CurrentLocationName = helper.GetPreferedLocationName(geocodeResults)
 		}
 	}
@@ -413,6 +421,9 @@ func onAdventureCompleted(adventure *model.Adventure, activity *model.Activity, 
 		return errors.New("end location not found")
 	}
 
+	adventure.CurrentLocationLat = endLocation.Lat
+	adventure.CurrentLocationLon = endLocation.Lon
+	adventure.CurrentLocationIndexOnRoute = -1 // -1 means the last point on the route
 	adventure.CurrentLocationName = endLocation.Name
 
 	return nil

@@ -9,15 +9,44 @@ import (
 	"github.com/twpayne/go-polyline"
 )
 
-// GetPointFromPolylineAndDistance calculates a point on a polyline at a specified distance from the start and returns its longitude and latitude.
-func GetPointFromPolylineAndDistance(coursePolylineEncoded string, reverseDirection bool, distanceMeters float32) (float64, float64, error) {
+func PointAndIndexAtDistanceAlongLine(ls orb.LineString, distance float64) (orb.Point, int) {
+	if len(ls) == 0 {
+		panic("empty LineString")
+	}
+
+	if distance < 0 || len(ls) == 1 {
+		return ls[0], 0
+	}
+
+	var (
+		travelled = 0.0
+		from, to  orb.Point
+	)
+
+	for i := 1; i < len(ls); i++ {
+		from, to = ls[i-1], ls[i]
+
+		actualSegmentDistance := geo.DistanceHaversine(from, to)
+		expectedSegmentDistance := distance - travelled
+
+		if expectedSegmentDistance < actualSegmentDistance {
+			bearing := geo.Bearing(from, to)
+			return geo.PointAtBearingAndDistance(from, bearing, expectedSegmentDistance), i - 1
+		}
+		travelled += actualSegmentDistance
+	}
+
+	return to, len(ls) - 1
+}
+
+func DecodePolyline(coursePolylineEncoded string, reverse bool) (orb.LineString, error) {
 	coords, notDecodedBytes, err := polyline.DecodeCoords([]byte(coursePolylineEncoded)) // returns lat, lon pairs
 	if err != nil {
-		return 0, 0, err
+		return nil, err
 	}
 
 	if len(notDecodedBytes) > 0 {
-		return 0, 0, errors.New("not all bytes were decoded from polyline")
+		return nil, errors.New("not all bytes were decoded from polyline")
 	}
 
 	course := make(orb.LineString, 0, len(coords))
@@ -25,13 +54,11 @@ func GetPointFromPolylineAndDistance(coursePolylineEncoded string, reverseDirect
 		course = append(course, orb.Point{coord[1], coord[0]})
 	}
 
-	if reverseDirection {
+	if reverse {
 		course.Reverse()
 	}
 
-	targetPoint, _ := geo.PointAtDistanceAlongLine(course, float64(distanceMeters))
-
-	return targetPoint.Lon(), targetPoint.Lat(), nil
+	return course, nil
 }
 
 func GetPreferedLocationName(features []model.ReverseGeocodeFeature) string {

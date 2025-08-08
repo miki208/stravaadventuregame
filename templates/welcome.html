@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Welcome</title>
   <link rel="stylesheet" href="static/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -35,6 +37,75 @@
         <p>🧭 <strong>Current location:</strong> {{.Adventure.CurrentLocationName}}</p>
         <p>📅 <strong>Start date:</strong> {{.StartDateFormatted}} (GMT)</p>
       </div>
+      <div id="map" class="map-container"></div>
+      <script>
+         // Creating map options
+        const startLocation = [{{.StartLocation.Lat}}, {{.StartLocation.Lon}}];
+        const endLocation = [{{.EndLocation.Lat}}, {{.EndLocation.Lon}}];
+        const currentLocation = [{{.Adventure.CurrentLocationLat}}, {{.Adventure.CurrentLocationLon}}];
+
+        const completedRoute = [
+          {{range .CompletedRoute}}
+          [{{.Lat}}, {{.Lon}}],
+          {{end}}
+        ];
+
+        const notCompletedRoute = [
+          {{range .NotCompletedRoute}}
+          [{{.Lat}}, {{.Lon}}],
+          {{end}}
+        ]
+
+        var mapOptions = {
+          center: currentLocation,
+          zoom: 10
+        }
+         
+        var map = new L.map('map', mapOptions);
+         
+        var layer = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+        map.addLayer(layer);
+
+        // start
+        var startIconOptions = {
+          iconUrl: 'static/images/icons/start_icon.png',
+          iconSize: [20, 20]
+        };
+        var customStartIcon = L.icon(startIconOptions);
+
+        var startMarker = new L.Marker(startLocation, {clickable: false, draggable: false, icon: customStartIcon});
+        startMarker.addTo(map);
+
+        // end
+        var endIconOptions = {
+          iconUrl: 'static/images/icons/finish_icon.png',
+          iconSize: [20, 20]
+        };
+        var customEndIcon = L.icon(endIconOptions);
+
+        var endMarker = new L.Marker(endLocation, {clickable: false, draggable: false, icon: customEndIcon});
+        endMarker.addTo(map);
+
+        // current
+        var currentIconOptions = {
+          iconUrl: 'static/images/icons/runner_icon.png',
+          iconSize: [20, 20]
+        };
+        var currentIcon = L.icon(currentIconOptions);
+
+        var currentLocationMarker = new L.Marker(currentLocation, {clickable: false, draggable: false, icon: currentIcon});
+        currentLocationMarker.addTo(map);
+
+        if(completedRoute.length > 1) {
+          var completedRouteLine = L.polyline(completedRoute, {color: 'green', weight: 3});
+          completedRouteLine.addTo(map);
+        }
+
+        if(notCompletedRoute.length > 1) {
+          var notCompletedRouteLine = L.polyline(notCompletedRoute, {color: 'red', weight: 3});
+          notCompletedRouteLine.addTo(map);
+        }
+      </script>
       {{end}}
     </section>
     {{else}}

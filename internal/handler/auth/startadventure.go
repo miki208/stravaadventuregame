@@ -94,15 +94,18 @@ func StartAdventure(resp *handler.ResponseWithSession, req *http.Request, app *a
 
 	// create adventure and save it to the database
 	adventure := model.Adventure{
-		AthleteId:           resp.Session().UserId,
-		StartLocation:       startLocationId,
-		EndLocation:         stopLocationId,
-		CurrentLocationName: startLocation.Name,
-		CurrentDistance:     0,
-		TotalDistance:       adventureCourse.Summary.Distance,
-		Completed:           0,
-		StartDate:           int(time.Now().Unix()),
-		EndDate:             0,
+		AthleteId:                   resp.Session().UserId,
+		StartLocation:               startLocationId,
+		EndLocation:                 stopLocationId,
+		CurrentLocationLat:          startLocation.Lat,
+		CurrentLocationLon:          startLocation.Lon,
+		CurrentLocationIndexOnRoute: 0,
+		CurrentLocationName:         startLocation.Name,
+		CurrentDistance:             0,
+		TotalDistance:               adventureCourse.Summary.Distance,
+		Completed:                   0,
+		StartDate:                   int(time.Now().Unix()),
+		EndDate:                     0,
 	}
 
 	err = adventure.Save(app.SqlDb, nil)
