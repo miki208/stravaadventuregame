@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Strava Adventure Game</title>
-  <link rel="stylesheet" href="static/css/style.css">
+  <link rel="stylesheet" href="{{.ProxyPathPrefix}}/static/css/style.css">
 </head>
 <body style="text-align: center; margin-top: 50px; font-family: sans-serif;">
   <button class="theme-toggle-btn" onclick="toggleTheme()">🌓</button>
   <h2>Click to the Strava logo below to authorize/login.</h2>
 
   <a href="https://www.strava.com/oauth/authorize?client_id={{.ClientId}}&response_type=code&redirect_uri={{.RedirectUri}}&approval_prompt=auto&scope={{.Scope}}">
-    <img src="static/images/strava-connect.svg" alt="Connect with Strava"/>
+    <img src="{{.ProxyPathPrefix}}/static/images/strava-connect.svg" alt="Connect with Strava"/>
   </a>
 
   {{if ne .Error ""}}
   <p style="color: red;">Error occured during authorization: {{.Error}}. Please check if you have authorized the app to access Strava and try again. Otherwise, contact developers for support.</p>
   {{end}}
-  <script src="static/js/theme.js"></script>
+  <script src="{{.ProxyPathPrefix}}/static/js/theme.js"></script>
 </body>
 </html>

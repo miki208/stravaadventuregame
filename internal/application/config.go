@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
+	"strings"
 )
 
 type stravaConfig struct {
@@ -23,10 +25,12 @@ type openRouteServiceConfig struct {
 }
 
 type config struct {
-	ServerType                string                  `json:"server_type"`
+	UseTls                    bool                    `json:"use_tls"`
+	InsecurePort              int                     `json:"insecure_port"`
 	LoggingLevel              string                  `json:"logging_level"`
 	SessionDurationInMinutes  int                     `json:"session_duration_in_minutes"`
 	Hostname                  string                  `json:"hostname"`
+	ProxyPathPrefix           string                  `json:"proxy_path_prefix"`
 	DefaultPageLoggedInUsers  string                  `json:"default_page_logged_in"`
 	DefaultPageLoggedOutUsers string                  `json:"default_page_logged_out"`
 	AdminPanelPage            string                  `json:"admin_panel_page"`
@@ -72,8 +76,8 @@ func (conf *config) getLoggingLevel() slog.Level {
 func (conf *config) validate() error {
 	//TODO: add real bulletproof validation
 
-	if conf.ServerType != "http" && conf.ServerType != "https" {
-		return fmt.Errorf("server type must be either 'http' or 'https'")
+	if conf.InsecurePort < 1 || conf.InsecurePort > 65535 {
+		return fmt.Errorf("insecure_port must be between 1 and 65535")
 	}
 
 	if conf.SessionDurationInMinutes < 10 {
@@ -82,6 +86,21 @@ func (conf *config) validate() error {
 
 	if conf.Hostname == "" {
 		return fmt.Errorf("hostname cannot be empty")
+	}
+
+	if conf.ProxyPathPrefix != "" {
+		parsedUrl, err := url.Parse(conf.ProxyPathPrefix)
+		if err != nil {
+			return fmt.Errorf("proxy_path_prefix must be a valid url")
+		}
+
+		if parsedUrl.Path != conf.ProxyPathPrefix {
+			return fmt.Errorf("proxy_path_prefix must be a bare path without schema and hostname")
+		}
+
+		if strings.HasSuffix(conf.ProxyPathPrefix, "/") {
+			return fmt.Errorf("proxy_path_prefix must not end with a /")
+		}
 	}
 
 	if conf.DefaultPageLoggedInUsers == "" || conf.DefaultPageLoggedOutUsers == "" || conf.AdminPanelPage == "" {

@@ -32,20 +32,25 @@ func main() {
 	defer app.CronSvc.Stop()
 
 	srvFactory := application.ServerFactory{
-		Hostname:        app.Hostname,
-		PathToCertCache: app.PathToCertCache,
+		Hostname: app.Hostname,
 	}
 
-	srv := srvFactory.CreateServer(app.ServerType)
+	var srvOptions any
+	if app.UseTls {
+		srvOptions = application.NewHTTPSServerOptions(app.PathToCertCache, app.ProxyPathPrefix)
+	} else {
+		srvOptions = application.NewHTTPServerOptions(app.InsecurePort, app.ProxyPathPrefix)
+	}
+	srv := srvFactory.CreateServer(srvOptions)
 
-	srv.AddRoute(app.DefaultPageLoggedOutUsers, handler.MakeHandlerWoutSession(app, noauth.Authorize))
+	srv.AddRoute(app.GetDefaultPageLoggedOutUsersWithoutProxyPathPrefix(), handler.MakeHandlerWoutSession(app, noauth.Authorize))
 	srv.AddRoute(app.StravaSvc.GetAuthorizationCallback(), handler.MakeHandlerWoutSession(app, noauth.StravaAuthCallback))
-	srv.AddRoute(app.DefaultPageLoggedInUsers, handler.MakeHandlerWSession(app, auth.Welcome))
+	srv.AddRoute(app.GetDefaultPageLoggedInUsersWithoutProxyPathPrefix(), handler.MakeHandlerWSession(app, auth.Welcome))
 	srv.AddRoute("/start-adventure", handler.MakeHandlerWSession(app, auth.StartAdventure))
 	srv.AddRoute("/logout", handler.MakeHandlerWSession(app, auth.Logout))
 	srv.AddRoute("/deauthorize", handler.MakeHandlerWSession(app, auth.Deauthorize))
 	srv.AddRoute("/settings", handler.MakeHandlerWSession(app, auth.Settings))
-	srv.AddRoute(app.AdminPanelPage, handler.MakeHandlerWSession(app, auth.AdminPanel))
+	srv.AddRoute(app.GetAdminPanelPageWithoutProxyPathPrefix(), handler.MakeHandlerWSession(app, auth.AdminPanel))
 	srv.AddRoute("/stravawebhook/delete", handler.MakeHandlerWSession(app, auth.DeleteStravaWebhookSubscription))
 	srv.AddRoute("/stravawebhook/create", handler.MakeHandlerWSession(app, auth.CreateStravaWebhookSubscription))
 	srv.AddRoute(app.StravaSvc.GetWebhookCallback(), handler.MakeHandlerWoutSession(app, noauth.StravaWebhookCallback))

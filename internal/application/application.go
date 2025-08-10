@@ -14,11 +14,13 @@ import (
 )
 
 type App struct {
-	ServerType                ServerType
+	UseTls                    bool
+	InsecurePort              int
 	Hostname                  string
-	DefaultPageLoggedInUsers  string
-	DefaultPageLoggedOutUsers string
-	AdminPanelPage            string
+	ProxyPathPrefix           string
+	defaultPageLoggedInUsers  string
+	defaultPageLoggedOutUsers string
+	adminPanelPage            string
 
 	Templates  *template.Template
 	SessionMgr *helper.SessionManager
@@ -38,12 +40,36 @@ type App struct {
 	SupportedActivityTypes []string
 }
 
+func (app *App) GetDefaultPageLoggedInUsers() string {
+	return app.ProxyPathPrefix + app.defaultPageLoggedInUsers
+}
+
+func (app *App) GetDefaultPageLoggedInUsersWithoutProxyPathPrefix() string {
+	return app.defaultPageLoggedInUsers
+}
+
+func (app *App) GetDefaultPageLoggedOutUsers() string {
+	return app.ProxyPathPrefix + app.defaultPageLoggedOutUsers
+}
+
+func (app *App) GetDefaultPageLoggedOutUsersWithoutProxyPathPrefix() string {
+	return app.defaultPageLoggedOutUsers
+}
+
+func (app *App) GetAdminPanelPage() string {
+	return app.ProxyPathPrefix + app.adminPanelPage
+}
+
+func (app *App) GetAdminPanelPageWithoutProxyPathPrefix() string {
+	return app.adminPanelPage
+}
+
 func (app *App) GetFullAuthorizationCallbackUrl() string {
-	return "https://" + app.Hostname + app.StravaSvc.GetAuthorizationCallback()
+	return "https://" + app.Hostname + app.ProxyPathPrefix + app.StravaSvc.GetAuthorizationCallback()
 }
 
 func (app *App) GetFullWebhookCallbackUrl() string {
-	return "https://" + app.Hostname + app.StravaSvc.GetWebhookCallback()
+	return "https://" + app.Hostname + app.ProxyPathPrefix + app.StravaSvc.GetWebhookCallback()
 }
 
 func (app *App) Close() error {
@@ -92,11 +118,13 @@ func MakeApp(configFileName string) *App {
 	templates := getTemplateFileNames(conf.PathToTemplates)
 
 	app := &App{
-		ServerType:                ServerTypeFromString(conf.ServerType),
+		UseTls:                    conf.UseTls,
+		InsecurePort:              conf.InsecurePort,
 		Hostname:                  conf.Hostname,
-		DefaultPageLoggedInUsers:  conf.DefaultPageLoggedInUsers,
-		DefaultPageLoggedOutUsers: conf.DefaultPageLoggedOutUsers,
-		AdminPanelPage:            conf.AdminPanelPage,
+		ProxyPathPrefix:           conf.ProxyPathPrefix,
+		defaultPageLoggedInUsers:  conf.DefaultPageLoggedInUsers,
+		defaultPageLoggedOutUsers: conf.DefaultPageLoggedOutUsers,
+		adminPanelPage:            conf.AdminPanelPage,
 
 		Templates:  template.Must(template.ParseFiles(templates...)),
 		SessionMgr: helper.CreateSessionManager(conf.SessionDurationInMinutes),

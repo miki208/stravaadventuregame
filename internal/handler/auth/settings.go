@@ -26,7 +26,13 @@ func Settings(resp *handler.ResponseWithSession, req *http.Request, app *applica
 			return handler.NewHandlerError(http.StatusInternalServerError, fmt.Errorf("settings not found"))
 		}
 
-		err = app.Templates.ExecuteTemplate(resp, "settings.html", athleteSettings)
+		err = app.Templates.ExecuteTemplate(resp, "settings.html", struct {
+			ProxyPathPrefix string
+			AthleteSettings model.AthleteSettings
+		}{
+			ProxyPathPrefix: app.ProxyPathPrefix,
+			AthleteSettings: athleteSettings,
+		})
 		if err != nil {
 			return handler.NewHandlerError(http.StatusInternalServerError, err)
 		}
@@ -57,7 +63,7 @@ func Settings(resp *handler.ResponseWithSession, req *http.Request, app *applica
 			return handler.NewHandlerError(http.StatusInternalServerError, err)
 		}
 
-		http.Redirect(resp, req, "/settings", http.StatusFound)
+		http.Redirect(resp, req, app.ProxyPathPrefix+"/settings", http.StatusFound)
 	}
 
 	return nil

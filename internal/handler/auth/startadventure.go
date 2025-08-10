@@ -113,7 +113,7 @@ func StartAdventure(resp *handler.ResponseWithSession, req *http.Request, app *a
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
-	http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+	http.Redirect(resp, req, app.GetDefaultPageLoggedInUsers(), http.StatusFound)
 
 	return nil
 }

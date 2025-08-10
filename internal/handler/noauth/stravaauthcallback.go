@@ -13,25 +13,25 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 	query := req.URL.Query()
 
 	if query.Has("error") {
-		http.Redirect(w, req, "/?error="+query.Get("error"), http.StatusFound)
+		http.Redirect(w, req, app.ProxyPathPrefix+"/?error="+query.Get("error"), http.StatusFound)
 
 		return nil
 	}
 
 	if !query.Has("code") {
-		http.Redirect(w, req, "/?error=code_missing", http.StatusFound)
+		http.Redirect(w, req, app.ProxyPathPrefix+"/?error=code_missing", http.StatusFound)
 
 		return nil
 	}
 
 	if !query.Has("scope") {
-		http.Redirect(w, req, "/?error=scope_missing", http.StatusFound)
+		http.Redirect(w, req, app.ProxyPathPrefix+"/?error=scope_missing", http.StatusFound)
 
 		return nil
 	}
 
 	if !app.StravaSvc.ValidateScope(query.Get("scope")) {
-		http.Redirect(w, req, "/?error=invalid_scope", http.StatusFound)
+		http.Redirect(w, req, app.ProxyPathPrefix+"/?error=invalid_scope", http.StatusFound)
 
 		return nil
 	}
@@ -82,10 +82,10 @@ func StravaAuthCallback(w http.ResponseWriter, req *http.Request, app *applicati
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
-	session := app.SessionMgr.CreateSession(athlete.Id)
+	session := app.SessionMgr.CreateSession(athlete.Id, app.ProxyPathPrefix)
 	http.SetCookie(w, &session.SessionCookie)
 
-	http.Redirect(w, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+	http.Redirect(w, req, app.GetDefaultPageLoggedInUsers(), http.StatusFound)
 
 	return nil
 }

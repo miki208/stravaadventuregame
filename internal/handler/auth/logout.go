@@ -13,7 +13,7 @@ func Logout(resp *handler.ResponseWithSession, req *http.Request, app *applicati
 
 	resp.InvalidateSession()
 
-	http.Redirect(resp, req, app.DefaultPageLoggedOutUsers, http.StatusFound)
+	http.Redirect(resp, req, app.GetDefaultPageLoggedOutUsers(), http.StatusFound)
 
 	return nil
 }

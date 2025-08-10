@@ -89,13 +89,13 @@ func (manager *SessionManager) DestroySession(session *Session) {
 	slog.Debug("Session destroyed.", "userId", session.UserId, "sessionId", sessionId)
 }
 
-func (manager *SessionManager) CreateSession(userId int64) *Session {
+func (manager *SessionManager) CreateSession(userId int64, proxyPathPrefix string) *Session {
 	session := manager.GetSessionByUserId(userId)
 	if session != nil {
 		manager.DestroySession(session)
 	}
 
-	sessionCookie := CreateSessionCookie(manager.sessionDuration)
+	sessionCookie := CreateSessionCookie(manager.sessionDuration, proxyPathPrefix)
 
 	manager.userIdToSessionId[userId] = sessionCookie.Value
 	manager.sessionIdToSession[sessionCookie.Value] = &Session{UserId: userId, SessionCookie: sessionCookie}

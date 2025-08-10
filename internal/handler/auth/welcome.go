@@ -23,7 +23,7 @@ func Welcome(resp *handler.ResponseWithSession, req *http.Request, app *applicat
 	if !exists {
 		app.SessionMgr.DestroySession(resp.Session())
 
-		http.Redirect(resp, req, "/?error=user_not_found", http.StatusFound)
+		http.Redirect(resp, req, app.ProxyPathPrefix+"/?error=user_not_found", http.StatusFound)
 
 		return nil
 	}
@@ -140,11 +140,13 @@ func Welcome(resp *handler.ResponseWithSession, req *http.Request, app *applicat
 	}
 
 	err = app.Templates.ExecuteTemplate(resp, "welcome.html", struct {
+		ProxyPathPrefix     string
 		Athl                *model.Athlete
 		StartedAdventures   []AdventureExtended
 		CompletedAdventures []AdventureExtended
 		AvailableLocations  []model.Location
 	}{
+		ProxyPathPrefix:     app.ProxyPathPrefix,
 		Athl:                athlete,
 		StartedAdventures:   startedAdventuresExtended,
 		CompletedAdventures: completedAdventuresExtended,

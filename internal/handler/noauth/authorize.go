@@ -9,15 +9,17 @@ import (
 
 func Authorize(w http.ResponseWriter, req *http.Request, app *application.App) error {
 	err := app.Templates.ExecuteTemplate(w, "authorize.html", struct {
-		ClientId    int
-		RedirectUri string
-		Scope       string
-		Error       string
+		ProxyPathPrefix string
+		ClientId        int
+		RedirectUri     string
+		Scope           string
+		Error           string
 	}{
-		ClientId:    app.StravaSvc.GetClientId(),
-		RedirectUri: app.GetFullAuthorizationCallbackUrl(),
-		Scope:       app.StravaSvc.GetScope(),
-		Error:       req.URL.Query().Get("error"),
+		ProxyPathPrefix: app.ProxyPathPrefix,
+		ClientId:        app.StravaSvc.GetClientId(),
+		RedirectUri:     app.GetFullAuthorizationCallbackUrl(),
+		Scope:           app.StravaSvc.GetScope(),
+		Error:           req.URL.Query().Get("error"),
 	})
 
 	if err != nil {

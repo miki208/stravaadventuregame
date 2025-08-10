@@ -7,9 +7,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateSessionCookie(cookieDuration time.Duration) http.Cookie {
+func CreateSessionCookie(cookieDuration time.Duration, proxyPathPrefix string) http.Cookie {
 	sessionId := uuid.New().String()
 	expires := time.Now().Add(cookieDuration)
+
+	path := "/"
+	if proxyPathPrefix != "" {
+		path = proxyPathPrefix
+	}
 
 	return http.Cookie{
 		Name:     "session_id",
@@ -17,7 +22,7 @@ func CreateSessionCookie(cookieDuration time.Duration) http.Cookie {
 		Expires:  expires,
 		Secure:   true,
 		HttpOnly: true,
-		Path:     "/",
+		Path:     path,
 	}
 }
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>User Settings</title>
-  <link rel="stylesheet" href="static/css/style.css" />
+  <link rel="stylesheet" href="{{.ProxyPathPrefix}}/static/css/style.css" />
   <style>
     :root {
       --text-light: #ffffff;
@@ -56,19 +56,19 @@
   </style>
 </head>
 <body>
-  <a href="/welcome" class="back-button">⬅️ Back to Main Page</a>
+  <a href="{{.ProxyPathPrefix}}/welcome" class="back-button">⬅️ Back to Main Page</a>
   <button class="theme-toggle-btn" onclick="toggleTheme()">🌓</button>
 
   <h1>User Settings</h1>
 
   <div class="settings-section">
-    <form action="/settings" method="post">
+    <form action="{{.ProxyPathPrefix}}/settings" method="post">
       <div class="checkbox-row">
         <input
           type="checkbox"
           id="autoActivityDescUpdate"
           name="autoActivityDescUpdate"
-          {{if eq .AutoUpdateActivityDescription 1}}checked{{end}}
+          {{if eq .AthleteSettings.AutoUpdateActivityDescription 1}}checked{{end}}
         />
         <label for="autoActivityDescUpdate">
           Enable auto-updating Strava activity description on progress
@@ -79,10 +79,10 @@
   </div>
 
   <div class="settings-section deauth">
-    <a href="/deauthorize" class="btn btn-danger">🔌 Deauthorize Strava</a>
+    <a href="{{.ProxyPathPrefix}}/deauthorize" class="btn btn-danger">🔌 Deauthorize Strava</a>
   </div>
 
-  <script src="static/js/theme.js"></script>
+  <script src="{{.ProxyPathPrefix}}/static/js/theme.js"></script>
 </body>
 </html>
 

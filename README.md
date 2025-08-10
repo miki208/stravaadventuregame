@@ -15,7 +15,7 @@ This relatively simple (for now) program pulls in activities from Strava — one
 * Handles basic I/O operations and JSON encoding/decoding.
 * Implements a basic session manager, using a simple in-memory map and session cookies.
 
-## Setup & Run
+## Build & run
 
 * Build the binary in the standard way (install dependencies and run the build).
 * Prepare the SQLite database: create a database using the provided schema file app.db.sql.
@@ -36,5 +36,5 @@ This relatively simple (for now) program pulls in activities from Strava — one
 * Robust config validation.
 * Debug mode support: expose internal errors only in debug mode; otherwise, log them and return simplified, user-friendly messages.
 * Database abstraction: consider introducing an ORM instead of using bare database/sql, or build a custom solution to auto-generate schemas, methods, and handle migrations.
-* Map integration: display routes and current locations on an actual map instead of plain text.
+* ~~Map integration: display routes and current locations on an actual map instead of plain text.~~
 * Unit testing.

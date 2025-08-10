@@ -75,7 +75,7 @@ func MakeHandlerWSession(app *application.App, fn FuncHandlerWSession) func(http
 	return func(resp http.ResponseWriter, req *http.Request) {
 		session := app.SessionMgr.GetSessionByRequest(req)
 		if session == nil {
-			http.Redirect(resp, req, app.DefaultPageLoggedOutUsers, http.StatusFound)
+			http.Redirect(resp, req, app.GetDefaultPageLoggedOutUsers(), http.StatusFound)
 
 			return
 		}
@@ -99,7 +99,7 @@ func MakeHandlerWoutSession(app *application.App, fn FuncHandler) func(http.Resp
 	return func(resp http.ResponseWriter, req *http.Request) {
 		session := app.SessionMgr.GetSessionByRequest(req)
 		if session != nil {
-			http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+			http.Redirect(resp, req, app.GetDefaultPageLoggedInUsers(), http.StatusFound)
 
 			return
 		}

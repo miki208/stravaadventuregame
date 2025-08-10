@@ -1,5 +1,7 @@
 {
-    "server_type": "https",
+    "use_tls": true,
+    "insecure_port": 8080,
+    "proxy_path_prefix": "",
     "logging_level": "debug",
     "session_duration_in_minutes": 30,
     "hostname": "localhost",

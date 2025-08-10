@@ -27,7 +27,7 @@ func AdminPanel(resp *handler.ResponseWithSession, req *http.Request, app *appli
 	}
 
 	if !isAdmin {
-		http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+		http.Redirect(resp, req, app.GetDefaultPageLoggedInUsers(), http.StatusFound)
 
 		return nil
 	}
@@ -47,7 +47,13 @@ func AdminPanel(resp *handler.ResponseWithSession, req *http.Request, app *appli
 	}
 
 	// render the admin panel page
-	err = app.Templates.ExecuteTemplate(resp, "adminpanel.html", webhooksubscription)
+	err = app.Templates.ExecuteTemplate(resp, "adminpanel.html", struct {
+		ProxyPathPrefix     string
+		WebhookSubscription model.StravaWebhookSubscription
+	}{
+		ProxyPathPrefix:     app.ProxyPathPrefix,
+		WebhookSubscription: webhooksubscription,
+	})
 	if err != nil {
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}

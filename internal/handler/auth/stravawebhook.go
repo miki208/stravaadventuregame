@@ -27,7 +27,7 @@ func CreateStravaWebhookSubscription(resp *handler.ResponseWithSession, req *htt
 	}
 
 	if !isAdmin {
-		http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+		http.Redirect(resp, req, app.GetDefaultPageLoggedInUsers(), http.StatusFound)
 
 		return nil
 	}
@@ -51,7 +51,7 @@ func CreateStravaWebhookSubscription(resp *handler.ResponseWithSession, req *htt
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
-	http.Redirect(resp, req, app.AdminPanelPage, http.StatusFound)
+	http.Redirect(resp, req, app.GetAdminPanelPage(), http.StatusFound)
 
 	return nil
 }
@@ -73,7 +73,7 @@ func DeleteStravaWebhookSubscription(resp *handler.ResponseWithSession, req *htt
 	}
 
 	if !isAdmin {
-		http.Redirect(resp, req, app.DefaultPageLoggedInUsers, http.StatusFound)
+		http.Redirect(resp, req, app.GetDefaultPageLoggedInUsers(), http.StatusFound)
 
 		return nil
 	}
@@ -94,7 +94,7 @@ func DeleteStravaWebhookSubscription(resp *handler.ResponseWithSession, req *htt
 		return handler.NewHandlerError(http.StatusInternalServerError, err)
 	}
 
-	http.Redirect(resp, req, app.AdminPanelPage, http.StatusFound)
+	http.Redirect(resp, req, app.GetAdminPanelPage(), http.StatusFound)
 
 	return nil
 }

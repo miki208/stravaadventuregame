@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,25 +14,6 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-// server types
-type ServerType int
-
-const (
-	HTTP ServerType = iota
-	HTTPS
-)
-
-func ServerTypeFromString(serverType string) ServerType {
-	switch serverType {
-	case "http":
-		return HTTP
-	case "https":
-		return HTTPS
-	default:
-		return HTTP // default to HTTP if unknown type
-	}
-}
-
 // interface for server operations
 type Server interface {
 	ListenAndServe()
@@ -39,6 +21,18 @@ type Server interface {
 }
 
 // concrete implementations of the Server interface
+type HTTPServerOptions struct {
+	InsecurePort    int
+	ProxyPathPrefix string
+}
+
+func NewHTTPServerOptions(insecurePort int, proxyPathPrefix string) *HTTPServerOptions {
+	return &HTTPServerOptions{
+		InsecurePort:    insecurePort,
+		ProxyPathPrefix: proxyPathPrefix,
+	}
+}
+
 type HTTPServer struct {
 	httpMux *http.ServeMux
 
@@ -75,6 +69,19 @@ func (s *HTTPServer) ListenAndServe() {
 	}
 
 	slog.Info("Server shutdown complete.")
+}
+
+// concrete implementation of the HTTPSServer
+type HTTPSServerOptions struct {
+	PathToCertCache string
+	ProxyPathPrefix string
+}
+
+func NewHTTPSServerOptions(pathToCertCache string, proxyPathPrefix string) *HTTPSServerOptions {
+	return &HTTPSServerOptions{
+		PathToCertCache: pathToCertCache,
+		ProxyPathPrefix: proxyPathPrefix,
+	}
 }
 
 type HTTPSServer struct {
@@ -130,25 +137,24 @@ func (s *HTTPSServer) ListenAndServe() {
 
 // ServerFactory is responsible for creating server instances
 type ServerFactory struct {
-	Hostname        string
-	PathToCertCache string
+	Hostname string
 }
 
-func (factory *ServerFactory) CreateServer(serverType ServerType) Server {
-	switch serverType {
-	case HTTP:
+func (factory *ServerFactory) CreateServer(options any) Server {
+	switch opts := options.(type) {
+	case *HTTPServerOptions:
 		result := &HTTPServer{
 			httpMux: http.NewServeMux(),
 		}
 
 		result.httpServer = &http.Server{
-			Addr:    ":http",
+			Addr:    fmt.Sprintf(":%d", opts.InsecurePort),
 			Handler: result.httpMux,
 		}
 
 		return result
 
-	case HTTPS:
+	case *HTTPSServerOptions:
 		result := &HTTPSServer{
 			httpsMux: http.NewServeMux(),
 		}
@@ -158,12 +164,12 @@ func (factory *ServerFactory) CreateServer(serverType ServerType) Server {
 		certManager := &autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(domains...),
-			Cache:      autocert.DirCache(factory.PathToCertCache),
+			Cache:      autocert.DirCache(opts.PathToCertCache),
 		}
 
 		httpMux := http.NewServeMux()
 		httpMux.Handle("/", certManager.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
+			http.Redirect(w, r, "https://"+r.Host+opts.ProxyPathPrefix+r.RequestURI, http.StatusMovedPermanently)
 		})))
 
 		result.httpServer = &http.Server{

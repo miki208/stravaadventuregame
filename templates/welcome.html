@@ -1,10 +1,12 @@
+{{ $root := . }}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Welcome</title>
-  <link rel="stylesheet" href="static/css/style.css">
+  <link rel="stylesheet" href="{{$root.ProxyPathPrefix}}/static/css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -19,8 +21,8 @@
       <button id="menuToggle">☰</button>
       <ul id="menu" class="hidden">
         <li><button onclick="toggleTheme()">🌓 Toggle theme</button></li>
-        <li><a href="/settings">⚙️ User Settings</a></li>
-        <li><a href="/logout">🚪 Logout</a></li>
+        <li><a href="{{$root.ProxyPathPrefix}}/settings">⚙️ User Settings</a></li>
+        <li><a href="{{$root.ProxyPathPrefix}}/logout">🚪 Logout</a></li>
       </ul>
     </div>
   </header>
@@ -68,7 +70,7 @@
 
         // start
         var startIconOptions = {
-          iconUrl: 'static/images/icons/start_icon.png',
+          iconUrl: '{{$root.ProxyPathPrefix}}/static/images/icons/start_icon.png',
           iconSize: [20, 20]
         };
         var customStartIcon = L.icon(startIconOptions);
@@ -78,7 +80,7 @@
 
         // end
         var endIconOptions = {
-          iconUrl: 'static/images/icons/finish_icon.png',
+          iconUrl: '{{$root.ProxyPathPrefix}}/static/images/icons/finish_icon.png',
           iconSize: [20, 20]
         };
         var customEndIcon = L.icon(endIconOptions);
@@ -88,7 +90,7 @@
 
         // current
         var currentIconOptions = {
-          iconUrl: 'static/images/icons/runner_icon.png',
+          iconUrl: '{{$root.ProxyPathPrefix}}/static/images/icons/runner_icon.png',
           iconSize: [20, 20]
         };
         var currentIcon = L.icon(currentIconOptions);
@@ -132,7 +134,7 @@
     {{if not .StartedAdventures}}
     <section>
       <h2>Start a New Adventure</h2>
-        <form action="/start-adventure" method="POST">
+        <form action="{{$root.ProxyPathPrefix}}/start-adventure" method="POST">
           <div class="form-row">
             <div class="form-group">
               <label for="start">Start location:</label>
@@ -160,6 +162,6 @@
     </section>
     {{end}}
   </main>
-  <script src="static/js/theme.js"></script>
+  <script src="{{$root.ProxyPathPrefix}}/static/js/theme.js"></script>
 </body>
 </html>
